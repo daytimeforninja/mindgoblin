@@ -1,0 +1,49 @@
+# Haskell
+dist-newstyle/
+*.hi
+*.o
+*.prof
+*.aux
+*.hp
+*.eventlog
+.stack-work/
+
+# Cabal
+cabal-dev
+*.o
+*.hi
+*.hie
+*.chi
+*.chs.h
+*.dyn_o
+*.dyn_hi
+.hpc
+.hsenv
+.cabal-sandbox/
+cabal.sandbox.config
+*.prof
+*.aux
+*.hp
+*.eventlog
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project specific
+result
+result-*
+
+# Temporary files
+*.tmp
+*.backup
+
+# Development docs (keep local only)
+CLAUDE.md

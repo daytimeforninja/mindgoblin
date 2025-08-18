@@ -1,0 +1,124 @@
+cabal-version:      3.0
+name:               mg
+version:            1.0.0.0
+synopsis:           Mind Goblin - Bullet journal todo.txt to CalDAV sync
+description:        Plain text task management with bullet journal notation and CalDAV sync via vdirsyncer.
+                    Maintains a clean ~/todo.txt file while syncing tasks to calendar apps.
+license:            AGPL-3.0-or-later
+license-file:       LICENSE
+author:             Friday
+maintainer:         friday@example.com
+homepage:           https://github.com/daytimeforninja/mindgoblin
+bug-reports:        https://github.com/daytimeforninja/mindgoblin/issues
+category:           Productivity
+build-type:         Simple
+extra-doc-files:    README.md
+                    INSTALL.md
+                    docs/TEST_SPEC.md
+
+source-repository head
+  type:             git
+  location:         https://github.com/daytimeforninja/mindgoblin
+  branch:           trunk
+
+common warnings
+    ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates
+                 -Wincomplete-uni-patterns -Wmissing-export-lists
+                 -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
+
+library
+    import:           warnings
+    exposed-modules:  MindGoblin
+                      MindGoblin.Types
+                      MindGoblin.Parser
+                      MindGoblin.VTodo
+                      MindGoblin.VDir
+                      MindGoblin.Sync
+                      MindGoblin.FileOps
+                      MindGoblin.VDirSyncer
+    build-depends:    base >=4.18.0.0 && <5
+                    , text
+                    , time
+                    , megaparsec
+                    , containers
+                    , filepath
+                    , directory
+                    , process
+                    , bytestring
+                    , iCalendar
+                    , mtl
+                    , transformers
+                    , temporary
+                    , unix
+                    , cryptonite
+                    , deepseq
+    hs-source-dirs:   src
+    default-language: GHC2021
+
+executable mg
+    import:           warnings
+    main-is:          Main.hs
+    build-depends:    base >=4.18.0.0 && <5
+                    , mg
+                    , text
+                    , time
+                    , optparse-applicative
+                    , directory
+                    , filepath
+    hs-source-dirs:   app
+    default-language: GHC2021
+
+test-suite parser-tests
+    import:           warnings
+    default-language: GHC2021
+    type:             exitcode-stdio-1.0
+    hs-source-dirs:   test
+    main-is:          ParserSpec.hs
+    build-depends:    base >=4.18.0.0 && <5
+                    , mg
+                    , hspec
+                    , text
+                    , time
+                    , megaparsec
+
+test-suite vtodo-tests
+    import:           warnings
+    default-language: GHC2021
+    type:             exitcode-stdio-1.0
+    hs-source-dirs:   test
+    main-is:          VTodoSpec.hs
+    build-depends:    base >=4.18.0.0 && <5
+                    , mg
+                    , hspec
+                    , text
+                    , time
+                    , iCalendar
+
+test-suite file-tests
+    import:           warnings
+    default-language: GHC2021
+    type:             exitcode-stdio-1.0
+    hs-source-dirs:   test
+    main-is:          FileOpsSpec.hs
+    build-depends:    base >=4.18.0.0 && <5
+                    , mg
+                    , hspec
+                    , text
+                    , directory
+                    , filepath
+                    , temporary
+                    , time
+
+test-suite integration-tests
+    import:           warnings
+    default-language: GHC2021
+    type:             exitcode-stdio-1.0
+    hs-source-dirs:   test
+    main-is:          IntegrationSpec.hs
+    build-depends:    base >=4.18.0.0 && <5
+                    , mg
+                    , hspec
+                    , text
+                    , directory
+                    , process
+                    , temporary
