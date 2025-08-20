@@ -40,6 +40,10 @@
             cabal-install
             haskell-language-server
             
+            # Code formatting and linting
+            haskellPackages.fourmolu
+            haskellPackages.hlint
+            
             # Dependencies for our project
             haskellPackages.megaparsec
             haskellPackages.text
@@ -59,6 +63,7 @@
             # Testing
             haskellPackages.hspec
             haskellPackages.hspec-discover
+            haskellPackages.QuickCheck
             
             # vdirsyncer for CalDAV operations
             vdirsyncer
@@ -68,6 +73,8 @@
             echo "Mind Goblin development environment"
             echo "Run 'cabal build' to build the project"
             echo "Run 'cabal test' to run tests"
+            echo "Run 'fourmolu -i src/ test/' to format code"
+            echo "Run 'hlint src/ test/' to lint code"
             echo "vdirsyncer is available for CalDAV operations"
           '';
         };

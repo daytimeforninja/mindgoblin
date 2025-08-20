@@ -101,11 +101,8 @@ All tests enumerated from README.md design document. Each test includes a narrat
 -- Input: "• Research topic\n  Check library\n  Read papers"
 -- Expected: Task { notes = ["Check library", "Read papers"] }
 
--- Test: Task with UID comment
--- User Story: "The system adds invisible UIDs for sync tracking"
--- Data Flow: "<!-- UID:xxx -->" -> HTML comment parser -> extract UID value
--- Input: "• Task <!-- UID:550e8400-e29b-41d4-a716-446655440000 -->"
--- Expected: Task { uid = Just "550e8400-e29b-41d4-a716-446655440000" }
+-- Note: UIDs are no longer stored in todo.txt files to keep them clean
+-- UIDs are generated deterministically based on task content for CalDAV sync
 
 -- Test: Empty lines between tasks
 -- User Story: "I use blank lines to visually separate tasks"
@@ -365,11 +362,11 @@ All tests enumerated from README.md design document. Each test includes a narrat
 -- Input: VTODO with STATUS:COMPLETED
 -- Expected: Completion detected
 
--- Test: Match UID to task
+-- Test: Match task by content
 -- User Story: "The right task gets marked complete"
--- Data Flow: UID from .ics -> search todo.txt for matching UID comment -> task found
--- Input: UID in .ics matches task UID
--- Expected: Correct task identified
+-- Data Flow: Task text + contexts from .ics -> search todo.txt for matching content -> task found
+-- Input: Task content matches text and contexts in todo.txt
+-- Expected: Correct task identified via content matching
 
 -- Test: Handle PERCENT-COMPLETE
 -- User Story: "Some calendar apps use percentage completion"
@@ -433,17 +430,9 @@ All tests enumerated from README.md design document. Each test includes a narrat
 -- Input: "  • Subtask"
 -- Expected: "  × Subtask"
 
--- Test: Add UID comment
--- User Story: "UIDs are added invisibly for sync tracking"
--- Data Flow: Task without UID -> generate -> append as HTML comment
--- Input: Task without UID
--- Expected: "× Task <!-- UID:generated-uid -->"
-
--- Test: Preserve existing UID
--- User Story: "UIDs never change once assigned"
--- Data Flow: Existing UID comment -> keep unchanged -> preserve sync state
--- Input: Task with UID comment
--- Expected: UID unchanged
+-- Note: UIDs are no longer stored in todo.txt to keep files clean
+-- Task completion uses content-based matching (text + contexts)
+-- UIDs are generated deterministically for .ics files only
 ```
 
 ### 4.2 File Safety Tests

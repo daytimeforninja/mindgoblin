@@ -122,3 +122,33 @@ test-suite integration-tests
                     , directory
                     , process
                     , temporary
+                    , filepath
+                    , time
+
+test-suite property-tests
+    import:           warnings
+    default-language: GHC2021
+    type:             exitcode-stdio-1.0
+    hs-source-dirs:   test
+    main-is:          PropertySpec.hs
+    build-depends:    base >=4.18.0.0 && <5
+                    , mg
+                    , hspec
+                    , QuickCheck
+                    , text
+                    , time
+
+test-suite cli-tests
+    import:           warnings
+    default-language: GHC2021
+    type:             exitcode-stdio-1.0
+    hs-source-dirs:   test
+    main-is:          CLISpec.hs
+    build-depends:    base >=4.18.0.0 && <5
+                    , hspec
+                    , text
+                    , directory
+                    , process
+                    , temporary
+                    , filepath
+                    , time

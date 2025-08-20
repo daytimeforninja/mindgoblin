@@ -1,0 +1,14 @@
+2025-08-20
+. Review code changes @computer
+! Fix production bug @urgent @computer Due: 2025-08-21
+x Submit expense report @computer
+- Meeting notes: Discussed Q4 planning
+o Team standup 10am @meetings
+* Consider switching to event sourcing
+> Research new framework @computer
+  Need to evaluate performance implications
+  Check compatibility with existing stack
+
+2025-08-19
+x Finished project @work
+. Follow up with client @calls
