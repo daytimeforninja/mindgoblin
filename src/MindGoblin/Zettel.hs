@@ -136,8 +136,9 @@ processZettelsFromTodoText notesDir todoContent = do
         then putStrLn "No zettel tags found in todo.txt"
         else do
             putStrLn $ "Found " ++ show (length allZettels) ++ " zettel tags"
-            -- Create files for each zettel
-            mapM_ (createZettelWithCurrentTime notesDir) allZettels
+            -- Create files for each zettel, but skip if file already exists
+            createdCount <- createZettelsIfNotExist notesDir allZettels
+            putStrLn $ "✅ Created " ++ show createdCount ++ " new zettel files (skipped " ++ show (length allZettels - createdCount) ++ " existing)"
   where
     -- Extract all zettel tags from todo.txt content by scanning each line
     extractZettelsFromText :: Text -> [Zettel]
@@ -153,12 +154,24 @@ processZettelsFromTodoText notesDir todoContent = do
             Right zettel -> Just zettel
             Left _ -> Nothing
         
-    createZettelWithCurrentTime :: FilePath -> Zettel -> IO ()
-    createZettelWithCurrentTime dir zettel = do
-        -- Generate current timestamp for the zettel
-        -- For now, use a fixed timestamp - real implementation would use getCurrentTime
+    -- Create zettel files only if they don't already exist
+    createZettelsIfNotExist :: FilePath -> [Zettel] -> IO Int
+    createZettelsIfNotExist dir zettels = do
+        results <- mapM (createZettelIfNotExist dir) zettels
+        return $ length $ filter id results  -- Count True values (files created)
+    
+    createZettelIfNotExist :: FilePath -> Zettel -> IO Bool
+    createZettelIfNotExist dir zettel = do
         let timestamp = "20250821T143022"
-        createZettelFile dir timestamp zettel
+        let filename = generateDenotFilename timestamp zettel
+        let fullPath = dir </> filename
+        
+        exists <- doesFileExist fullPath
+        if exists
+            then return False  -- File exists, skip
+            else do
+                createZettelFile dir timestamp zettel
+                return True  -- File created
 
 -- Helper functions
 

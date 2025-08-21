@@ -214,7 +214,13 @@ spec = do
         it "processes zettels with all zettel types" $ do
             -- Cover all zettel type instantiation in processZettelsFromTodoText
             withTestNotesDir $ \notesDir -> do
-                let todoContent = "test content"
+                let todoContent = T.unlines
+                        [ "2025-08-21"
+                        , ". Regular task"
+                        , "#zettel:full-type Complete zettelkasten entry"
+                        , "#z:short-type Quick fleeting thought"  
+                        , "#idea:idea-type Future project concept"
+                        ]
                 processZettelsFromTodoText notesDir todoContent
                 
                 files <- listDirectory notesDir
