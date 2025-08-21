@@ -7,6 +7,9 @@ module MindGoblin.Parser (
     parseTodoFile,
     extractContexts,
     parseDueDate,
+    parseZettelTag,
+    parseZettelWithContinuation,
+    parseDateSectionWithZettels,
 ) where
 
 import Control.Monad (void)
@@ -290,3 +293,145 @@ fromGregorian y m d = case fromGregorianValid y m d of
     Nothing -> case fromGregorianValid 2025 1 1 of
         Just defaultDate -> defaultDate
         Nothing -> error "Internal error: default date invalid"
+
+{- | Parse zettelkasten tag from text line  
+@test-spec: ZETTLE.md#parsing
+@implements: ZETTLE.md#syntax-design
+@user-story: Users capture zettel seeds with #zettel:slug tags
+@data-flow: Text line -> Zettel tag parser -> Zettel record
+-}
+parseZettelTag :: Text -> Either T.ParseError Zettel
+parseZettelTag text = case parse zettelParser "" text of
+    Left err -> Left $ T.ParseFailure $ errorBundlePretty err
+    Right zettel -> Right zettel
+  where
+    zettelParser :: Parser Zettel
+    zettelParser = do
+        zettelType <- choice
+            [ ZettelFull <$ string "#zettel:"
+            , ZettelShort <$ string "#z:"  
+            , ZettelIdea <$ string "#idea:"
+            ]
+        -- Parse everything after : until end of line
+        rest <- takeWhileP Nothing (/= '\n')
+        
+        -- Find the first space and split slug/content
+        case T.findIndex (== ' ') rest of
+            Nothing -> fail "Missing content after slug"
+            Just spaceIdx -> do
+                let slug = T.take spaceIdx rest
+                let content = T.drop (spaceIdx + 1) rest
+                
+                -- Validate slug format
+                if T.length slug > 50
+                    then fail "Slug too long (max 50 characters)"
+                    else if not (T.all validSlugChar slug) || T.null slug
+                        then fail "Invalid characters in slug (letters, numbers, hyphens only)"
+                        else pure $ Zettel slug (T.strip content) [] [] zettelType
+      where
+        validSlugChar c = isAsciiLower c || isAsciiUpper c || isDigit c || c == '-'
+
+{- | Parse zettel with continuation lines
+@test-spec: ZETTLE.md#parsing  
+@implements: ZETTLE.md#syntax-design
+@user-story: Users add indented details under zettel tags
+@data-flow: Main line + indented lines -> Zettel with continuation
+-}
+parseZettelWithContinuation :: Text -> Either T.ParseError Zettel
+parseZettelWithContinuation text = case parse zettelWithContinuationParser "" text of
+    Left err -> Left $ T.ParseFailure $ errorBundlePretty err
+    Right zettel -> Right zettel
+  where
+    zettelWithContinuationParser :: Parser Zettel
+    zettelWithContinuationParser = do
+        -- Parse the main zettel line
+        zettelType <- choice
+            [ ZettelFull <$ string "#zettel:"
+            , ZettelShort <$ string "#z:"  
+            , ZettelIdea <$ string "#idea:"
+            ]
+        slug <- slugParser
+        void $ char ' '
+        content <- takeWhileP Nothing (/= '\n')
+        void $ optional eol
+        
+        -- Parse continuation lines (indented)
+        continuationLines <- many $ try $ do
+            void $ string "  " -- Two spaces for indentation
+            line <- takeWhileP Nothing (/= '\n')
+            void $ optional eol
+            pure $ T.strip line
+        
+        pure $ Zettel slug (T.strip content) continuationLines [] zettelType
+    
+    slugParser :: Parser Text
+    slugParser = do
+        slug <- T.pack <$> some validSlugChar
+        if T.length slug > 50
+            then fail "Slug too long (max 50 characters)"
+            else pure slug
+      where
+        validSlugChar = alphaNumChar <|> char '-'
+
+{- | Parse date section extracting both tasks and zettels
+@test-spec: ZETTLE.md#integration
+@implements: ZETTLE.md#unified-workflow
+@user-story: Users mix tasks and zettel captures in daily sections
+@data-flow: Date section -> extract tasks and zettels separately
+-}
+parseDateSectionWithZettels :: Text -> Either T.ParseError (DateSection, [Zettel])
+parseDateSectionWithZettels input = case parse dateSectionWithZettelsParser "" input of
+    Left err -> Left $ T.ParseFailure $ errorBundlePretty err
+    Right result -> Right result
+  where
+    dateSectionWithZettelsParser :: Parser (DateSection, [Zettel])
+    dateSectionWithZettelsParser = do
+        date <- dateHeaderParser
+        void eol
+        lines' <-
+            many
+                ( try $ do
+                    notFollowedBy eof
+                    notFollowedBy (try dateHeaderParser) -- Stop at next date
+                    line <- takeWhileP Nothing (/= '\n')
+                    (void eol <|> eof)
+                    pure line
+                )
+        
+        -- Separate tasks from zettels
+        let (tasks, zettels) = partitionLinesIntoTasksAndZettels date lines'
+        
+        pure (DateSection date tasks, zettels)
+    
+    partitionLinesIntoTasksAndZettels :: Day -> [Text] -> ([Task], [Zettel])
+    partitionLinesIntoTasksAndZettels date lines' =
+        let taskResults = mapMaybe (tryParseTask date) lines'
+            zettelResults = mapMaybe tryParseZettel lines'
+        in (taskResults, zettelResults)
+    
+    tryParseTask :: Day -> Text -> Maybe Task
+    tryParseTask date line
+        | T.null line = Nothing
+        | otherwise = case parseTaskLine date line of
+            Left _ -> Nothing
+            Right task -> Just task
+    
+    tryParseZettel :: Text -> Maybe Zettel
+    tryParseZettel line
+        | T.null line = Nothing
+        | T.isPrefixOf "#zettel:" line || T.isPrefixOf "#z:" line || T.isPrefixOf "#idea:" line =
+            case parseZettelTag line of
+                Left _ -> Nothing
+                Right zettel -> Just zettel
+        | otherwise = Nothing
+    
+    dateHeaderParser :: Parser Day
+    dateHeaderParser = do
+        year <- L.decimal
+        void $ char '-'
+        month <- L.decimal
+        void $ char '-'
+        day <- L.decimal
+        case fromGregorianValid year month day of
+            Just d -> pure d
+            Nothing -> fail "Invalid date"
