@@ -8,6 +8,8 @@ module MindGoblin.Types (
     ParseError (..),
     VTodoStatus (..),
     Priority (..),
+    Zettel (..),
+    ZettelType (..),
     shouldSyncTask,
 ) where
 
@@ -96,6 +98,31 @@ data Priority
     = HighPriority -- 1-3 in iCalendar
     | MediumPriority -- 4-6 in iCalendar
     | LowPriority -- 7-9 in iCalendar
+    deriving (Eq, Show, Generic)
+
+{- | Zettelkasten entry for knowledge management
+@test-spec: ZETTLE.md#parsing
+@implements: ZETTLE.md#data-types
+@user-story: Users capture fleeting thoughts as zettel seeds
+@data-flow: Zettel tag -> Parser -> Denote file creation
+-}
+data Zettel = Zettel
+    { zettelSlug :: Text
+    , zettelContent :: Text
+    , zettelContinuation :: [Text]
+    , zettelKeywords :: [Text]
+    , zettelType :: ZettelType
+    }
+    deriving (Eq, Show, Generic)
+
+{- | Types of zettel entries
+@test-spec: ZETTLE.md#parsing
+@implements: ZETTLE.md#syntax-design
+-}
+data ZettelType
+    = ZettelFull -- #zettel:slug - complete zettelkasten entry
+    | ZettelShort -- #z:slug - quick fleeting thought
+    | ZettelIdea -- #idea:slug - project concept or future idea
     deriving (Eq, Show, Generic)
 
 {- | Determine if a task should be synced to CalDAV

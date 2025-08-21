@@ -36,6 +36,7 @@ library
                       MindGoblin.Sync
                       MindGoblin.FileOps
                       MindGoblin.VDirSyncer
+                      MindGoblin.Zettel
     build-depends:    base >=4.18.0.0 && <5
                     , text
                     , time
@@ -93,6 +94,32 @@ test-suite vtodo-tests
                     , text
                     , time
                     , iCalendar
+
+test-suite zettel-tests
+    import:           warnings
+    default-language: GHC2021
+    type:             exitcode-stdio-1.0
+    hs-source-dirs:   test
+    main-is:          ZettelSpec.hs
+    build-depends:    base >=4.18.0.0 && <5
+                    , mg
+                    , hspec
+                    , text
+                    , directory
+                    , filepath
+                    , temporary
+                    , time
+
+test-suite vdirsyncer-tests
+    import:           warnings
+    default-language: GHC2021
+    type:             exitcode-stdio-1.0
+    hs-source-dirs:   test
+    main-is:          VDirSyncerSpec.hs
+    build-depends:    base >=4.18.0.0 && <5
+                    , mg
+                    , hspec
+                    , process
 
 test-suite file-tests
     import:           warnings
@@ -168,6 +195,18 @@ test-suite chaos-tests
                     , filepath
                     , time
                     , unix
+
+test-suite types-tests
+    import:           warnings
+    default-language: GHC2021
+    type:             exitcode-stdio-1.0
+    hs-source-dirs:   test
+    main-is:          TypesSpec.hs
+    build-depends:    base >=4.18.0.0 && <5
+                    , mg
+                    , hspec
+                    , text
+                    , time
 
 test-suite edge-case-tests
     import:           warnings

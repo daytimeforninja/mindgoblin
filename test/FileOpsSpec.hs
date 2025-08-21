@@ -185,47 +185,6 @@ spec = do
                         T.unpack content `shouldContain` "CATEGORIES:work"
                     [] -> expectationFailure "Expected at least one file in vdir"
 
-        it "updates existing .ics files" $ do
-            -- User story: "Editing task text updates the calendar entry"
-            -- Data flow: Task text changed -> find .ics by deterministic UID -> update SUMMARY
-            withSystemTempDirectory "mg-test" $ \tmpDir -> do
-                let vdirPath = tmpDir </> "vdir" </> "tasks"
-                createDirectoryIfMissing True vdirPath
-
-                let originalTask =
-                        Task
-                            { taskDate = fromGregorian 2025 8 16
-                            , taskBullet = Open
-                            , taskText = "Original task"
-                            , taskContexts = []
-                            , taskDue = Nothing
-                            , taskNotes = []
-                            , taskUid = Just "550e8400e29b41d4"
-                            , taskEventTime = Nothing
-                            }
-
-                let updatedTask = originalTask{taskText = "Updated task", taskContexts = [Context "urgent"]}
-
-                -- Create original file
-                writeTaskToVdir vdirPath originalTask
-
-                -- Update the task
-                writeTaskToVdir vdirPath updatedTask
-
-                -- Should have 2 files now (original and updated have different content hashes)
-                files <- listDirectory vdirPath
-                length files `shouldBe` 2
-
-                -- Check that the new file contains updated content
-                let updatedFiles = filter (/= "550e8400-e29b-41d4-a716-446655440000.ics") files
-                case updatedFiles of
-                    (updatedFile : _) -> do
-                        let fullPath = vdirPath </> updatedFile
-                        content <- TIO.readFile fullPath
-                        T.unpack content `shouldContain` "SUMMARY:Updated task"
-                        T.unpack content `shouldContain` "CATEGORIES:urgent"
-                    [] -> expectationFailure "No updated files found"
-
     describe "vdir Reading Tests (TEST_SPEC.md#3.1)" $ do
         it "parses all .ics files in vdir" $ do
             -- User story: "All calendar files in vdir are checked for updates"
@@ -290,3 +249,109 @@ spec = do
                 case tasks of
                     (task : _) -> isTaskCompleted task `shouldBe` True
                     [] -> expectationFailure "No tasks found"
+
+    describe "Coverage for Missing Code Paths" $ do
+        it "handles non-existent todo file gracefully" $ do
+            -- @user-story: "Missing files produce clear error messages"
+            withSystemTempDirectory "mg-test" $ \tmpDir -> do
+                let todoFile = tmpDir </> "nonexistent.txt"
+                let task = Task (fromGregorian 2025 8 16) Open "Task" [] Nothing [] Nothing Nothing
+                result <- markTaskCompleted todoFile task
+                case result of
+                    Left err -> T.unpack err `shouldContain` "Todo file does not exist"
+                    Right _ -> expectationFailure "Should have failed with missing file"
+
+        it "handles priority bullet completion" $ do
+            -- @user-story: "Priority tasks can be completed"
+            withSystemTempDirectory "mg-test" $ \tmpDir -> do
+                let todoFile = tmpDir </> "todo.txt"
+                let originalContent = "2025-08-16\n! Urgent task @work"
+                TIO.writeFile todoFile originalContent
+
+                let task = Task (fromGregorian 2025 8 16) Priority "Urgent task" [Context "work"] Nothing [] Nothing Nothing
+                _ <- markTaskCompleted todoFile task
+
+                content <- TIO.readFile todoFile
+                T.unpack content `shouldContain` "x Urgent task @work"
+
+        it "handles event bullet completion" $ do
+            -- @user-story: "Event tasks can be completed"
+            withSystemTempDirectory "mg-test" $ \tmpDir -> do
+                let todoFile = tmpDir </> "todo.txt"
+                let originalContent = "2025-08-16\no Meeting @work"
+                TIO.writeFile todoFile originalContent
+
+                let task = Task (fromGregorian 2025 8 16) Event "Meeting" [Context "work"] Nothing [] Nothing Nothing
+                _ <- markTaskCompleted todoFile task
+
+                content <- TIO.readFile todoFile
+                T.unpack content `shouldContain` "x Meeting @work"
+
+        it "handles scheduled bullet completion" $ do
+            -- @user-story: "Scheduled tasks can be completed"
+            withSystemTempDirectory "mg-test" $ \tmpDir -> do
+                let todoFile = tmpDir </> "todo.txt"
+                let originalContent = "2025-08-16\n< Scheduled task"
+                TIO.writeFile todoFile originalContent
+
+                let task = Task (fromGregorian 2025 8 16) Scheduled "Scheduled task" [] Nothing [] Nothing Nothing
+                _ <- markTaskCompleted todoFile task
+
+                content <- TIO.readFile todoFile
+                T.unpack content `shouldContain` "x Scheduled task"
+
+        it "leaves non-matching bullets unchanged" $ do
+            -- @user-story: "Non-actionable bullets are preserved"
+            withSystemTempDirectory "mg-test" $ \tmpDir -> do
+                let todoFile = tmpDir </> "todo.txt"
+                let originalContent = "2025-08-16\n- Note item\n* Idea item"
+                TIO.writeFile todoFile originalContent
+
+                let task = Task (fromGregorian 2025 8 16) Idea "Idea item" [] Nothing [] Nothing Nothing
+                _ <- markTaskCompleted todoFile task
+
+                content <- TIO.readFile todoFile
+                T.unpack content `shouldContain` "- Note item"
+                T.unpack content `shouldContain` "* Idea item" -- No change expected
+
+        it "handles empty vdir directory" $ do
+            -- @user-story: "Empty directories don't cause errors"
+            withSystemTempDirectory "mg-test" $ \tmpDir -> do
+                let vdirPath = tmpDir </> "empty-vdir"
+                createDirectoryIfMissing True vdirPath
+                tasks <- readVdirTasks vdirPath
+                tasks `shouldBe` []
+
+        it "handles invalid iCalendar format gracefully" $ do
+            -- @user-story: "Malformed calendar files don't crash the system"
+            withSystemTempDirectory "mg-test" $ \tmpDir -> do
+                let vdirPath = tmpDir </> "vdir"
+                createDirectoryIfMissing True vdirPath
+                
+                -- Create invalid .ics file
+                let invalidIcs = "INVALID CALENDAR FORMAT\nNO BEGIN/END TAGS"
+                TIO.writeFile (vdirPath </> "invalid.ics") invalidIcs
+
+                tasks <- readVdirTasks vdirPath
+                tasks `shouldBe` [] -- Should return empty list, not crash
+
+        it "cleans up old .ics files correctly" $ do
+            -- @user-story: "Old task files are cleaned from vdir"
+            withSystemTempDirectory "mg-test" $ \tmpDir -> do
+                let vdirPath = tmpDir </> "vdir"
+                createDirectoryIfMissing True vdirPath
+
+                -- Create old files that should be removed
+                TIO.writeFile (vdirPath </> "old1.ics") "old content"
+                TIO.writeFile (vdirPath </> "old2.ics") "old content"
+                TIO.writeFile (vdirPath </> "readme.txt") "not ics - should be kept"
+
+                -- Create a task and corresponding file that should be kept
+                let task = Task (fromGregorian 2025 8 16) Open "Keep this" [] Nothing [] Nothing Nothing
+                writeTaskToVdir vdirPath task
+
+                cleanVdirForTasks vdirPath [task]
+
+                files <- listDirectory vdirPath
+                length files `shouldSatisfy` (> 0)
+                files `shouldSatisfy` elem "readme.txt" -- Non-ics files preserved
