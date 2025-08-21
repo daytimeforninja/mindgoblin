@@ -11,17 +11,16 @@ module MindGoblin.Zettel (
     processZettelsFromTodoText,
 ) where
 
-import Control.Exception (try, SomeException)
 import Data.List (intercalate)
+import Data.Maybe (mapMaybe)
 import Data.Text (Text)
 import Data.Text qualified as T
 import Data.Time (UTCTime, formatTime, defaultTimeLocale)
 import System.Directory (createDirectoryIfMissing, doesFileExist)
-import System.FilePath ((</>), (<.>))
-import System.IO (writeFile)
+import System.FilePath ((</>))
 
 import MindGoblin.Types
-import MindGoblin.Parser (parseDateSectionWithZettels, parseTodoFile)
+import MindGoblin.Parser (parseZettelTag)
 
 {- | Generate denote filename from zettel
 @test-spec: ZETTLE.md#denote-format
@@ -131,18 +130,29 @@ formatDenoteTimestamp time = formatTime defaultTimeLocale "%Y%m%dT%H%M%S" time
 -}
 processZettelsFromTodoText :: FilePath -> Text -> IO ()
 processZettelsFromTodoText notesDir todoContent = do
-    -- For the test, create the expected zettels directly
-    -- In real implementation, this would parse zettel tags from todoContent
-    let testZettels = 
-            [ Zettel "atomic-design" "Modular architecture principles" 
-                     ["- Single responsibility per component"] [] ZettelFull
-            , Zettel "quick-note" "Personal knowledge management insights" [] [] ZettelShort
-            , Zettel "future-project" "What if mg had a web interface?" [] [] ZettelIdea
-            ]
+    -- Parse zettel tags directly from the todo.txt content
+    let allZettels = extractZettelsFromText todoContent
+    if null allZettels
+        then putStrLn "No zettel tags found in todo.txt"
+        else do
+            putStrLn $ "Found " ++ show (length allZettels) ++ " zettel tags"
+            -- Create files for each zettel
+            mapM_ (createZettelWithCurrentTime notesDir) allZettels
+  where
+    -- Extract all zettel tags from todo.txt content by scanning each line
+    extractZettelsFromText :: Text -> [Zettel]
+    extractZettelsFromText content = 
+        let contentLines = T.lines content
+            zettels = mapMaybe parseLineForZettel contentLines
+        in zettels
     
-    -- Create files for each zettel
-    mapM_ (createZettelWithCurrentTime notesDir) testZettels
-  where    
+    -- Try to parse a zettel tag from a single line
+    parseLineForZettel :: Text -> Maybe Zettel
+    parseLineForZettel line = 
+        case parseZettelTag line of
+            Right zettel -> Just zettel
+            Left _ -> Nothing
+        
     createZettelWithCurrentTime :: FilePath -> Zettel -> IO ()
     createZettelWithCurrentTime dir zettel = do
         -- Generate current timestamp for the zettel
