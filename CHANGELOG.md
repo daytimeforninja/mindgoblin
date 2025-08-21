@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.2.0.0] - 2025-08-21
+
+### Fixed
+- 🕐 **Local timezone support** - `mg list` now correctly shows today's tasks in user's local timezone instead of UTC
+- 📅 **Accurate date filtering** - Fixed issue where users in non-UTC timezones saw tomorrow's or yesterday's tasks
+
+### Technical
+- ⚡ **Timezone handling** - All date operations now use local time for user-facing commands
+- 🧪 **Test consistency** - Updated all test suites to use local timezone for reliable behavior
+- 🔧 **Zero breaking changes** - Maintains full backward compatibility with existing todo.txt files
+
 ## [1.1.0.0] - 2025-08-21
 
 ### Added

@@ -5,7 +5,7 @@ module Main (main) where
 import Control.Exception (catch, SomeException)
 import Data.Text qualified as T
 import Data.Text.IO qualified as TIO
-import Data.Time (Day, defaultTimeLocale, formatTime, fromGregorianValid, getCurrentTime, utctDay)
+import Data.Time (Day, defaultTimeLocale, formatTime, fromGregorianValid, getCurrentTime, getCurrentTimeZone, utcToLocalTime, localDay)
 import System.FilePath ((</>))
 import System.IO.Temp (withSystemTempDirectory)
 import Test.Hspec
@@ -24,7 +24,9 @@ spec = do
         describe "UID Storage Regression (Critical Bug)" $ do
             it "ensures UIDs are never written to todo.txt" $ withTempDir $ \tmpDir -> do
                 let todoFile = tmpDir </> "todo.txt"
-                today <- formatTime defaultTimeLocale "%Y-%m-%d" . utctDay <$> getCurrentTime
+                utc <- getCurrentTime
+                tz <- getCurrentTimeZone
+                let today = formatTime defaultTimeLocale "%Y-%m-%d" . localDay $ utcToLocalTime tz utc
                 let content = T.pack $ unlines [today, ". Test task @context"]
                 TIO.writeFile todoFile content
                 
@@ -62,7 +64,9 @@ spec = do
         describe "Content-Based Matching Regression" $ do
             it "correctly matches tasks by content when UIDs are absent" $ withTempDir $ \tmpDir -> do
                 let todoFile = tmpDir </> "todo.txt"
-                today <- formatTime defaultTimeLocale "%Y-%m-%d" . utctDay <$> getCurrentTime
+                utc <- getCurrentTime
+                tz <- getCurrentTimeZone
+                let today = formatTime defaultTimeLocale "%Y-%m-%d" . localDay $ utcToLocalTime tz utc
                 let content = T.unlines
                         [ T.pack today
                         , ". First task @work"
@@ -105,7 +109,9 @@ spec = do
         describe "Text Encoding Regressions" $ do
             it "preserves Unicode characters exactly" $ withTempDir $ \tmpDir -> do
                 let todoFile = tmpDir </> "unicode.txt"
-                today <- formatTime defaultTimeLocale "%Y-%m-%d" . utctDay <$> getCurrentTime
+                utc <- getCurrentTime
+                tz <- getCurrentTimeZone
+                let today = formatTime defaultTimeLocale "%Y-%m-%d" . localDay $ utcToLocalTime tz utc
                 let unicodeText = "🚀 Unicode task with émojis and ümlauts 中文"
                 let content = T.pack $ unlines [today, ". " ++ T.unpack unicodeText ++ " @test"]
                 TIO.writeFile todoFile content
@@ -179,7 +185,9 @@ spec = do
         describe "File Operation Regressions" $ do
             it "handles concurrent modifications gracefully" $ withTempDir $ \tmpDir -> do
                 let todoFile = tmpDir </> "concurrent.txt"
-                today <- formatTime defaultTimeLocale "%Y-%m-%d" . utctDay <$> getCurrentTime
+                utc <- getCurrentTime
+                tz <- getCurrentTimeZone
+                let today = formatTime defaultTimeLocale "%Y-%m-%d" . localDay $ utcToLocalTime tz utc
                 let content = T.pack $ unlines [today, ". Task to modify"]
                 TIO.writeFile todoFile content
                 
@@ -203,7 +211,9 @@ spec = do
 
             it "preserves file existence after operations" $ withTempDir $ \tmpDir -> do
                 let todoFile = tmpDir </> "permissions.txt"
-                today <- formatTime defaultTimeLocale "%Y-%m-%d" . utctDay <$> getCurrentTime
+                utc <- getCurrentTime
+                tz <- getCurrentTimeZone
+                let today = formatTime defaultTimeLocale "%Y-%m-%d" . localDay $ utcToLocalTime tz utc
                 let content = T.pack $ unlines [today, ". Task"]
                 TIO.writeFile todoFile content
                 

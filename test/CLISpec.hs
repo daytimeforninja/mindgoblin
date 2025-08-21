@@ -4,13 +4,21 @@ module Main (main) where
 
 import Data.Text qualified as T
 import Data.Text.IO qualified as TIO
-import Data.Time (defaultTimeLocale, formatTime, getCurrentTime, utctDay)
+import Data.Time (defaultTimeLocale, formatTime, getCurrentTime, getCurrentTimeZone, utcToLocalTime, localDay)
 import System.Directory (createDirectoryIfMissing)
 import System.Exit (ExitCode (..))
 import System.FilePath ((</>))
 import System.IO.Temp (withSystemTempDirectory)
 import System.Process (readProcessWithExitCode)
 import Test.Hspec
+
+-- | Get current local date formatted as YYYY-MM-DD
+getCurrentLocalDateString :: IO String
+getCurrentLocalDateString = do
+    utc <- getCurrentTime
+    tz <- getCurrentTimeZone
+    let local = utcToLocalTime tz utc
+    return $ formatTime defaultTimeLocale "%Y-%m-%d" (localDay local)
 
 main :: IO ()
 main = hspec spec
@@ -21,7 +29,7 @@ spec = do
         describe "mg stats command" $ do
             it "works with default ~/todo.txt (when present)" $ withTempDir $ \tmpDir -> do
                 let todoFile = tmpDir </> "todo.txt"
-                today <- formatTime defaultTimeLocale "%Y-%m-%d" . utctDay <$> getCurrentTime
+                today <- getCurrentLocalDateString
                 let content = T.pack $ unlines [today, ". Test task"]
                 TIO.writeFile todoFile content
 
@@ -36,7 +44,7 @@ spec = do
 
             it "accepts --file option" $ withTempDir $ \tmpDir -> do
                 let customFile = tmpDir </> "custom.txt"
-                today <- formatTime defaultTimeLocale "%Y-%m-%d" . utctDay <$> getCurrentTime
+                today <- getCurrentLocalDateString
                 let content = T.pack $ unlines [today, ". Custom task"]
                 TIO.writeFile customFile content
 
@@ -61,7 +69,7 @@ spec = do
         describe "mg push command" $ do
             it "accepts --dry-run option" $ withTempDir $ \tmpDir -> do
                 let todoFile = tmpDir </> "todo.txt"
-                today <- formatTime defaultTimeLocale "%Y-%m-%d" . utctDay <$> getCurrentTime
+                today <- getCurrentLocalDateString
                 let content = T.pack $ unlines [today, ". Test task"]
                 TIO.writeFile todoFile content
 
@@ -88,7 +96,7 @@ spec = do
                 let vdirPath = tmpDir </> ".local" </> "share" </> "mg" </> "tasks"
                 createDirectoryIfMissing True vdirPath
 
-                today <- formatTime defaultTimeLocale "%Y-%m-%d" . utctDay <$> getCurrentTime
+                today <- getCurrentLocalDateString
                 let content = T.pack $ unlines [today, ". Test task"]
                 TIO.writeFile todoFile content
 
@@ -112,7 +120,7 @@ spec = do
         describe "mg pull command" $ do
             it "accepts --dry-run option" $ withTempDir $ \tmpDir -> do
                 let todoFile = tmpDir </> "todo.txt"
-                today <- formatTime defaultTimeLocale "%Y-%m-%d" . utctDay <$> getCurrentTime
+                today <- getCurrentLocalDateString
                 let content = T.pack $ unlines [today, ". Test task"]
                 TIO.writeFile todoFile content
 
@@ -137,7 +145,7 @@ spec = do
 
             it "accepts --file option" $ withTempDir $ \tmpDir -> do
                 let todoFile = tmpDir </> "custom.txt"
-                today <- formatTime defaultTimeLocale "%Y-%m-%d" . utctDay <$> getCurrentTime
+                today <- getCurrentLocalDateString
                 let content = T.pack $ unlines [today, ". Test task"]
                 TIO.writeFile todoFile content
 
@@ -163,7 +171,7 @@ spec = do
         describe "mg sync command" $ do
             it "accepts --dry-run option" $ withTempDir $ \tmpDir -> do
                 let todoFile = tmpDir </> "todo.txt"
-                today <- formatTime defaultTimeLocale "%Y-%m-%d" . utctDay <$> getCurrentTime
+                today <- getCurrentLocalDateString
                 let content = T.pack $ unlines [today, ". Test task"]
                 TIO.writeFile todoFile content
 
@@ -245,7 +253,7 @@ spec = do
         describe "mg list command" $ do
             it "shows today's tasks by priority" $ withTempDir $ \tmpDir -> do
                 let todoFile = tmpDir </> "todo.txt"
-                today <- formatTime defaultTimeLocale "%Y-%m-%d" . utctDay <$> getCurrentTime
+                today <- getCurrentLocalDateString
                 let content = T.pack $ unlines 
                       [ today
                       , ". Open task @work"
@@ -275,7 +283,7 @@ spec = do
 
             it "includes completed tasks with --completed flag" $ withTempDir $ \tmpDir -> do
                 let todoFile = tmpDir </> "todo.txt"
-                today <- formatTime defaultTimeLocale "%Y-%m-%d" . utctDay <$> getCurrentTime
+                today <- getCurrentLocalDateString
                 let content = T.pack $ unlines 
                       [ today
                       , ". Open task"
@@ -296,7 +304,7 @@ spec = do
 
             it "shows all tasks with --all flag" $ withTempDir $ \tmpDir -> do
                 let todoFile = tmpDir </> "todo.txt"
-                today <- formatTime defaultTimeLocale "%Y-%m-%d" . utctDay <$> getCurrentTime
+                today <- getCurrentLocalDateString
                 let yesterday = "2025-08-19"
                 let content = T.pack $ unlines 
                       [ today
@@ -320,7 +328,7 @@ spec = do
 
             it "filters by context with --context flag" $ withTempDir $ \tmpDir -> do
                 let todoFile = tmpDir </> "todo.txt"
-                today <- formatTime defaultTimeLocale "%Y-%m-%d" . utctDay <$> getCurrentTime
+                today <- getCurrentLocalDateString
                 let content = T.pack $ unlines 
                       [ today
                       , ". Work task @work"
@@ -356,7 +364,7 @@ spec = do
 
             it "accepts --file option" $ withTempDir $ \tmpDir -> do
                 let customFile = tmpDir </> "custom.txt"
-                today <- formatTime defaultTimeLocale "%Y-%m-%d" . utctDay <$> getCurrentTime
+                today <- getCurrentLocalDateString
                 let content = T.pack $ unlines [today, ". Custom task"]
                 TIO.writeFile customFile content
 
