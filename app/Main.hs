@@ -133,7 +133,7 @@ opts = info (parseCommand <**> helper <**> versionOption)
   <> header "mg - bullet journal CalDAV sync via vdirsyncer"
   )
   where
-    versionOption = infoOption "mg 1.2.0.0"
+    versionOption = infoOption "mg 1.3.0.0"
       ( long "version"
       <> short 'v'
       <> help "Show version information" )
