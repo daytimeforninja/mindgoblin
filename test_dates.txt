@@ -1,0 +1,11 @@
+2025-08-21
+. Valid task under valid date
+
+2025-13-45
+. Task under invalid date
+
+not-a-date
+. Task under malformed date
+
+2025-08-21
+. Another valid task

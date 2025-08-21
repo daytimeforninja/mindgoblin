@@ -11,7 +11,7 @@ import System.Directory (getHomeDirectory, doesFileExist, createDirectoryIfMissi
 import System.Exit (exitFailure)
 import Control.Monad (when, unless)
 import Data.List (partition)
-import Data.Time (getCurrentTime, utctDay)
+import Data.Time (getCurrentTime, utctDay, Day)
 
 import MindGoblin.Types
 import MindGoblin.Parser
@@ -26,6 +26,7 @@ data Command
   | Init InitOptions
   | Watch WatchOptions
   | Stats StatsOptions
+  | List ListOptions
   deriving (Show)
 
 -- | Sync command options
@@ -62,6 +63,14 @@ data StatsOptions = StatsOptions
   { statsFile :: Maybe FilePath
   } deriving (Show)
 
+-- | List command options
+data ListOptions = ListOptions
+  { listFile :: Maybe FilePath
+  , listAll :: Bool
+  , listCompleted :: Bool
+  , listContext :: Maybe Text
+  } deriving (Show)
+
 -- | Parse command line arguments
 parseCommand :: Parser Command
 parseCommand = subparser $ mconcat
@@ -71,6 +80,7 @@ parseCommand = subparser $ mconcat
   , command "init" (info (Init <$> parseInitOptions) (progDesc "Initialize config and vdirsyncer"))
   , command "watch" (info (Watch <$> parseWatchOptions) (progDesc "Auto-sync on file changes"))
   , command "stats" (info (Stats <$> parseStatsOptions) (progDesc "Show task statistics"))
+  , command "list" (info (List <$> parseListOptions) (progDesc "List tasks organized by priority"))
   ]
 
 -- | Parse sync options
@@ -107,6 +117,14 @@ parseStatsOptions :: Parser StatsOptions
 parseStatsOptions = StatsOptions
   <$> optional (strOption (long "file" <> metavar "FILE" <> help "Use custom todo.txt file"))
 
+-- | Parse list options
+parseListOptions :: Parser ListOptions
+parseListOptions = ListOptions
+  <$> optional (strOption (long "file" <> metavar "FILE" <> help "Use custom todo.txt file"))
+  <*> switch (long "all" <> help "Show all tasks, not just today's")
+  <*> switch (long "completed" <> help "Include completed tasks")
+  <*> optional (strOption (long "context" <> metavar "CONTEXT" <> help "Filter by context (e.g., @work)"))
+
 -- | Program options
 opts :: ParserInfo Command
 opts = info (parseCommand <**> helper <**> versionOption)
@@ -115,7 +133,7 @@ opts = info (parseCommand <**> helper <**> versionOption)
   <> header "mg - bullet journal CalDAV sync via vdirsyncer"
   )
   where
-    versionOption = infoOption "mg 1.0.0.0"
+    versionOption = infoOption "mg 1.1.0.0"
       ( long "version"
       <> short 'v'
       <> help "Show version information" )
@@ -134,6 +152,7 @@ runCommand (Pull options) = runPull options
 runCommand (Init options) = runInit options
 runCommand (Watch options) = runWatch options
 runCommand (Stats options) = runStats options
+runCommand (List options) = runList options
 
 -- | Run sync command
 -- @implements: README.md#mg-sync
@@ -352,7 +371,7 @@ runStats options = do
       let openTasks = filter (\t -> taskBullet t == Open) allTasks
       let completedTasks = filter (\t -> taskBullet t == Completed) allTasks
       let priorityTasks = filter (\t -> taskBullet t == Priority) allTasks
-      let notes = filter (\t -> taskBullet t == Note) allTasks
+      let shoppingTasks = filter (\t -> taskBullet t == Shopping) allTasks
       let events = filter (\t -> taskBullet t == Event) allTasks
       let ideas = filter (\t -> taskBullet t == Idea) allTasks
       today <- utctDay <$> getCurrentTime
@@ -363,8 +382,8 @@ runStats options = do
       putStrLn $ ". Open tasks: " ++ show (length openTasks)
       putStrLn $ "x Completed: " ++ show (length completedTasks)
       putStrLn $ "! Priority: " ++ show (length priorityTasks)
+      putStrLn $ "$ Shopping: " ++ show (length shoppingTasks)
       putStrLn $ "o Events: " ++ show (length events)
-      putStrLn $ "- Notes: " ++ show (length notes)
       putStrLn $ "* Ideas: " ++ show (length ideas)
       putStrLn $ "🔄 Syncable: " ++ show (length syncable)
       putStrLn ""
@@ -374,6 +393,98 @@ runStats options = do
             then fromIntegral (length completedTasks) / fromIntegral (length allTasks) * 100
             else 0
       putStrLn $ "✅ Completion rate: " ++ show (round completionRate :: Int) ++ "%"
+
+-- | Run list command
+-- @implements: README.md#mg-list
+-- @user-story: Users run mg list to see today's tasks organized by priority
+-- @data-flow: todo.txt -> parse -> filter by date/context -> sort by priority -> display
+runList :: ListOptions -> IO ()
+runList options = do
+  putStrLn "🧠 Mind Goblin - Task List"
+  
+  todoFile <- getTodoFile (listFile options)
+  content <- TIO.readFile todoFile
+  
+  case parseTodoFile content of
+    Left err -> do
+      putStrLn $ "❌ Failed to parse todo.txt: " ++ show err
+      exitFailure
+    Right sections -> do
+      today <- utctDay <$> getCurrentTime
+      let allTasks = concatMap sectionEntries sections
+      
+      -- Apply filters
+      let filteredTasks = filter (filterTask today options) allTasks
+      
+      -- Group by priority
+      let priorityTasks = filter (\t -> taskBullet t == Priority) filteredTasks
+      let openTasks = filter (\t -> taskBullet t == Open) filteredTasks
+      let shoppingTasks = filter (\t -> taskBullet t == Shopping) filteredTasks
+      let eventTasks = filter (\t -> taskBullet t == Event) filteredTasks
+      let completedTasks = filter (\t -> taskBullet t == Completed) filteredTasks
+      
+      putStrLn ""
+      
+      -- Display tasks by priority
+      unless (null priorityTasks) $ do
+        putStrLn "🔥 Priority Tasks:"
+        mapM_ (putStrLn . formatTask) priorityTasks
+        putStrLn ""
+      
+      unless (null openTasks) $ do
+        putStrLn "📋 Open Tasks:"
+        mapM_ (putStrLn . formatTask) openTasks
+        putStrLn ""
+      
+      unless (null shoppingTasks) $ do
+        putStrLn "🛒 Shopping:"
+        mapM_ (putStrLn . formatTask) shoppingTasks
+        putStrLn ""
+      
+      unless (null eventTasks) $ do
+        putStrLn "📅 Events:"
+        mapM_ (putStrLn . formatTask) eventTasks
+        putStrLn ""
+      
+      when (listCompleted options && not (null completedTasks)) $ do
+        putStrLn "✅ Completed:"
+        mapM_ (putStrLn . formatTask) completedTasks
+        putStrLn ""
+      
+      let totalShown = length filteredTasks
+      putStrLn $ "📊 Showing " ++ show totalShown ++ " tasks" ++
+        (if listAll options then "" else " (today only)")
+
+-- | Filter tasks based on list options
+filterTask :: Day -> ListOptions -> Task -> Bool
+filterTask today options task = 
+  dateFilter && contextFilter && completionFilter
+  where
+    dateFilter = listAll options || shouldSyncTask today task
+    contextFilter = case listContext options of
+      Nothing -> True
+      Just ctx -> Context ctx `elem` taskContexts task
+    completionFilter = listCompleted options || taskBullet task /= Completed
+
+-- | Format a task for display
+formatTask :: Task -> String
+formatTask task = 
+  bulletChar ++ " " ++ T.unpack (taskText task) ++ contextStr ++ dueStr
+  where
+    bulletChar = case taskBullet task of
+      Open -> "."
+      Completed -> "x"
+      Priority -> "!"
+      Event -> "o"
+      Idea -> "*"
+      Shopping -> "$"
+      _ -> "?"
+    contextStr = if null (taskContexts task)
+                then ""
+                else " " ++ unwords (map (\(Context c) -> "@" ++ T.unpack c) (taskContexts task))
+    dueStr = case taskDue task of
+      Nothing -> ""
+      Just due -> " Due: " ++ show due
 
 -- | Get todo.txt file path
 getTodoFile :: Maybe FilePath -> IO FilePath

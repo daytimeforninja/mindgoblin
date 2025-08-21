@@ -1,6 +1,6 @@
 cabal-version:      3.0
 name:               mg
-version:            1.0.0.0
+version:            1.1.0.0
 synopsis:           Mind Goblin - Bullet journal todo.txt to CalDAV sync
 description:        Plain text task management with bullet journal notation and CalDAV sync via vdirsyncer.
                     Maintains a clean ~/todo.txt file while syncing tasks to calendar apps.
@@ -149,6 +149,49 @@ test-suite cli-tests
                     , text
                     , directory
                     , process
+                    , temporary
+                    , filepath
+                    , time
+
+test-suite chaos-tests
+    import:           warnings
+    default-language: GHC2021
+    type:             exitcode-stdio-1.0
+    hs-source-dirs:   test
+    main-is:          ChaosSpec.hs
+    build-depends:    base >=4.18.0.0 && <5
+                    , mg
+                    , hspec
+                    , text
+                    , directory
+                    , temporary
+                    , filepath
+                    , time
+                    , unix
+
+test-suite edge-case-tests
+    import:           warnings
+    default-language: GHC2021
+    type:             exitcode-stdio-1.0
+    hs-source-dirs:   test
+    main-is:          EdgeCaseSpec.hs
+    build-depends:    base >=4.18.0.0 && <5
+                    , mg
+                    , hspec
+                    , text
+                    , time
+
+test-suite regression-tests
+    import:           warnings
+    default-language: GHC2021
+    type:             exitcode-stdio-1.0
+    hs-source-dirs:   test
+    main-is:          RegressionSpec.hs
+    build-depends:    base >=4.18.0.0 && <5
+                    , mg
+                    , hspec
+                    , text
+                    , directory
                     , temporary
                     , filepath
                     , time

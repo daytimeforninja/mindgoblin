@@ -293,21 +293,6 @@ spec = do
                         }
             shouldSyncTask today task `shouldBe` True
 
-        it "does not sync today's notes" $ do
-            -- User story: "Notes never sync, even from today"
-            let today = fromGregorian 2025 8 17
-            let task =
-                    Task
-                        { taskDate = today
-                        , taskBullet = Note
-                        , taskText = "Today's note"
-                        , taskContexts = []
-                        , taskDue = Nothing
-                        , taskNotes = []
-                        , taskUid = Just "task123"
-                        , taskEventTime = Nothing
-                        }
-            shouldSyncTask today task `shouldBe` False
 
         it "syncs today's completed tasks" $ do
             -- User story: "Completed tasks from today should sync to show progress"
