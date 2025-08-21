@@ -21,6 +21,11 @@ source-repository head
   location:         https://github.com/daytimeforninja/mindgoblin
   branch:           trunk
 
+flag external-tests
+    description: Enable tests that require external binaries (mg, vdirsyncer) or system resources
+    default: True
+    manual: True
+
 common warnings
     ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates
                  -Wincomplete-uni-patterns -Wmissing-export-lists
@@ -110,16 +115,17 @@ test-suite zettel-tests
                     , temporary
                     , time
 
-test-suite vdirsyncer-tests
-    import:           warnings
-    default-language: GHC2021
-    type:             exitcode-stdio-1.0
-    hs-source-dirs:   test
-    main-is:          VDirSyncerSpec.hs
-    build-depends:    base >=4.18.0.0 && <5
-                    , mg
-                    , hspec
-                    , process
+if flag(external-tests)
+    test-suite vdirsyncer-tests
+        import:           warnings
+        default-language: GHC2021
+        type:             exitcode-stdio-1.0
+        hs-source-dirs:   test
+        main-is:          VDirSyncerSpec.hs
+        build-depends:    base >=4.18.0.0 && <5
+                        , mg
+                        , hspec
+                        , process
 
 test-suite file-tests
     import:           warnings
@@ -136,21 +142,22 @@ test-suite file-tests
                     , temporary
                     , time
 
-test-suite integration-tests
-    import:           warnings
-    default-language: GHC2021
-    type:             exitcode-stdio-1.0
-    hs-source-dirs:   test
-    main-is:          IntegrationSpec.hs
-    build-depends:    base >=4.18.0.0 && <5
-                    , mg
-                    , hspec
-                    , text
-                    , directory
-                    , process
-                    , temporary
-                    , filepath
-                    , time
+if flag(external-tests)
+    test-suite integration-tests
+        import:           warnings
+        default-language: GHC2021
+        type:             exitcode-stdio-1.0
+        hs-source-dirs:   test
+        main-is:          IntegrationSpec.hs
+        build-depends:    base >=4.18.0.0 && <5
+                        , mg
+                        , hspec
+                        , text
+                        , directory
+                        , process
+                        , temporary
+                        , filepath
+                        , time
 
 test-suite property-tests
     import:           warnings
@@ -165,20 +172,21 @@ test-suite property-tests
                     , text
                     , time
 
-test-suite cli-tests
-    import:           warnings
-    default-language: GHC2021
-    type:             exitcode-stdio-1.0
-    hs-source-dirs:   test
-    main-is:          CLISpec.hs
-    build-depends:    base >=4.18.0.0 && <5
-                    , hspec
-                    , text
-                    , directory
-                    , process
-                    , temporary
-                    , filepath
-                    , time
+if flag(external-tests)
+    test-suite cli-tests
+        import:           warnings
+        default-language: GHC2021
+        type:             exitcode-stdio-1.0
+        hs-source-dirs:   test
+        main-is:          CLISpec.hs
+        build-depends:    base >=4.18.0.0 && <5
+                        , hspec
+                        , text
+                        , directory
+                        , process
+                        , temporary
+                        , filepath
+                        , time
 
 test-suite chaos-tests
     import:           warnings
