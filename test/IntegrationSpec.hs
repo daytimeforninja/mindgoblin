@@ -4,7 +4,7 @@ module Main (main) where
 
 import Data.Text qualified as T
 import Data.Text.IO qualified as TIO
-import Data.Time (Day, defaultTimeLocale, diffUTCTime, formatTime, fromGregorianValid, getCurrentTime, utctDay)
+import Data.Time (Day, defaultTimeLocale, diffUTCTime, formatTime, fromGregorianValid, getCurrentTime, getCurrentTimeZone, utcToLocalTime, localDay)
 import System.Directory (createDirectoryIfMissing, listDirectory)
 import System.Exit (ExitCode (..))
 import System.FilePath ((</>))
@@ -16,6 +16,14 @@ import MindGoblin.FileOps
 import MindGoblin.Parser
 import MindGoblin.Types
 
+-- | Get current local date formatted as YYYY-MM-DD
+getCurrentLocalDateString :: IO String
+getCurrentLocalDateString = do
+    utc <- getCurrentTime
+    tz <- getCurrentTimeZone
+    let local = utcToLocalTime tz utc
+    return $ formatTime defaultTimeLocale "%Y-%m-%d" (localDay local)
+
 main :: IO ()
 main = hspec spec
 
@@ -25,7 +33,7 @@ spec = do
         it "stats command works with sample todo.txt" $ withTempDir $ \tmpDir -> do
             -- Create sample todo.txt
             let todoFile = tmpDir </> "todo.txt"
-            today <- formatTime defaultTimeLocale "%Y-%m-%d" . utctDay <$> getCurrentTime
+            today <- getCurrentLocalDateString
             let sampleContent =
                     T.pack $
                         unlines
@@ -58,7 +66,7 @@ spec = do
             let vdirPath = tmpDir </> ".local" </> "share" </> "mg" </> "tasks"
             createDirectoryIfMissing True vdirPath
 
-            today <- formatTime defaultTimeLocale "%Y-%m-%d" . utctDay <$> getCurrentTime
+            today <- getCurrentLocalDateString
             let sampleContent =
                     T.pack $
                         unlines
@@ -137,7 +145,7 @@ spec = do
         it "today-only sync filtering works correctly" $ withTempDir $ \tmpDir -> do
             -- Create todo.txt with tasks from different dates
             let todoFile = tmpDir </> "todo.txt"
-            today <- formatTime defaultTimeLocale "%Y-%m-%d" . utctDay <$> getCurrentTime
+            today <- getCurrentLocalDateString
             let yesterday = "2025-08-19"
             let sampleContent =
                     T.pack $
@@ -157,7 +165,9 @@ spec = do
                 Left _ -> expectationFailure "Failed to parse todo file"
                 Right sections -> do
                     let allTasks = concatMap sectionEntries sections
-                    todayDay <- utctDay <$> getCurrentTime
+                    utc <- getCurrentTime
+                    tz <- getCurrentTimeZone
+                    let todayDay = localDay (utcToLocalTime tz utc)
                     let syncableTasks = filter (shouldSyncTask todayDay) allTasks
 
                     -- Should only sync today's tasks
@@ -170,7 +180,7 @@ spec = do
             let vdirPath = tmpDir </> ".local" </> "share" </> "mg" </> "tasks"
             createDirectoryIfMissing True vdirPath
 
-            today <- formatTime defaultTimeLocale "%Y-%m-%d" . utctDay <$> getCurrentTime
+            today <- getCurrentLocalDateString
             let originalContent =
                     T.pack $
                         unlines
@@ -227,7 +237,7 @@ spec = do
             let vdirPath = tmpDir </> ".local" </> "share" </> "mg" </> "tasks"
             createDirectoryIfMissing True vdirPath
 
-            today <- formatTime defaultTimeLocale "%Y-%m-%d" . utctDay <$> getCurrentTime
+            today <- getCurrentLocalDateString
             let unicodeContent =
                     T.pack $
                         unlines
@@ -264,7 +274,7 @@ spec = do
         it "handles large files efficiently" $ withTempDir $ \tmpDir -> do
             -- Test with a large number of tasks
             let todoFile = tmpDir </> "todo.txt"
-            today <- formatTime defaultTimeLocale "%Y-%m-%d" . utctDay <$> getCurrentTime
+            today <- getCurrentLocalDateString
 
             -- Generate 100 tasks
             let largeTasks = map (\i -> ". Task " ++ show (i :: Int) ++ " @context" ++ show (i `mod` 10)) [1 .. 100]

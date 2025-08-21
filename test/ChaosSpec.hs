@@ -6,7 +6,7 @@ import Control.Exception (bracket, catch, SomeException)
 import Control.Monad (replicateM_, void)
 import Data.Text qualified as T
 import Data.Text.IO qualified as TIO
-import Data.Time (Day, defaultTimeLocale, formatTime, fromGregorianValid, getCurrentTime, utctDay)
+import Data.Time (Day, defaultTimeLocale, formatTime, fromGregorianValid, getCurrentTime, getCurrentTimeZone, utcToLocalTime, localDay)
 import System.Directory (createDirectoryIfMissing, removeDirectoryRecursive, setPermissions, emptyPermissions)
 import System.FilePath ((</>))
 import System.IO (hClose, openTempFile)
@@ -62,7 +62,9 @@ spec = do
 
             it "handles concurrent file access" $ withTempDir $ \tmpDir -> do
                 let todoFile = tmpDir </> "concurrent.txt"
-                today <- formatTime defaultTimeLocale "%Y-%m-%d" . utctDay <$> getCurrentTime
+                utc <- getCurrentTime
+                tz <- getCurrentTimeZone
+                let today = formatTime defaultTimeLocale "%Y-%m-%d" . localDay $ utcToLocalTime tz utc
                 let content = T.pack $ unlines [today, ". Task 1", ". Task 2", ". Task 3"]
                 TIO.writeFile todoFile content
                 
@@ -85,7 +87,9 @@ spec = do
         describe "Memory Pressure Tests" $ do
             it "handles extremely large todo files" $ withTempDir $ \tmpDir -> do
                 let todoFile = tmpDir </> "huge.txt"
-                today <- formatTime defaultTimeLocale "%Y-%m-%d" . utctDay <$> getCurrentTime
+                utc <- getCurrentTime
+                tz <- getCurrentTimeZone
+                let today = formatTime defaultTimeLocale "%Y-%m-%d" . localDay $ utcToLocalTime tz utc
                 
                 -- Generate 10,000 tasks
                 let hugeTasks = map (\i -> ". Task " ++ show (i :: Int) ++ " @context" ++ show (i `mod` 100)) [1..10000]
@@ -128,7 +132,9 @@ spec = do
 
             it "handles extremely long lines" $ withTempDir $ \tmpDir -> do
                 let todoFile = tmpDir </> "longlines.txt"
-                today <- formatTime defaultTimeLocale "%Y-%m-%d" . utctDay <$> getCurrentTime
+                utc <- getCurrentTime
+                tz <- getCurrentTimeZone
+                let today = formatTime defaultTimeLocale "%Y-%m-%d" . localDay $ utcToLocalTime tz utc
                 
                 -- Create a task with 100,000 character text
                 let longText = T.replicate 100000 "a"

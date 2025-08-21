@@ -11,7 +11,7 @@ import System.Directory (getHomeDirectory, doesFileExist, createDirectoryIfMissi
 import System.Exit (exitFailure)
 import Control.Monad (when, unless)
 import Data.List (partition)
-import Data.Time (getCurrentTime, utctDay, Day)
+import Data.Time (getCurrentTime, Day, getCurrentTimeZone, utcToLocalTime, localDay)
 
 import MindGoblin.Types
 import MindGoblin.Parser
@@ -133,7 +133,7 @@ opts = info (parseCommand <**> helper <**> versionOption)
   <> header "mg - bullet journal CalDAV sync via vdirsyncer"
   )
   where
-    versionOption = infoOption "mg 1.1.0.0"
+    versionOption = infoOption "mg 1.2.0.0"
       ( long "version"
       <> short 'v'
       <> help "Show version information" )
@@ -143,6 +143,14 @@ main :: IO ()
 main = do
   cmd <- execParser opts
   runCommand cmd
+
+-- | Get current local date (not UTC)
+getCurrentLocalDate :: IO Day
+getCurrentLocalDate = do
+  utc <- getCurrentTime
+  tz <- getCurrentTimeZone
+  let local = utcToLocalTime tz utc
+  return $ localDay local
 
 -- | Execute the given command
 runCommand :: Command -> IO ()
@@ -174,7 +182,7 @@ runSync options = do
       putStrLn $ "❌ Failed to parse todo.txt: " ++ show err
       exitFailure
     Right sections -> do
-      today <- utctDay <$> getCurrentTime
+      today <- getCurrentLocalDate
       let allTasks = concatMap sectionEntries sections
       let syncableTasks = filter (shouldSyncTask today) allTasks
       putStrLn $ "📝 Found " ++ show (length allTasks) ++ " total entries"
@@ -245,7 +253,7 @@ runPush options = do
       putStrLn $ "❌ Failed to parse todo.txt: " ++ show err
       exitFailure
     Right sections -> do
-      today <- utctDay <$> getCurrentTime
+      today <- getCurrentLocalDate
       let allTasks = concatMap sectionEntries sections
       let syncableTasks = filter (shouldSyncTask today) allTasks
       putStrLn $ "📝 Found " ++ show (length allTasks) ++ " total entries"
@@ -374,7 +382,7 @@ runStats options = do
       let shoppingTasks = filter (\t -> taskBullet t == Shopping) allTasks
       let events = filter (\t -> taskBullet t == Event) allTasks
       let ideas = filter (\t -> taskBullet t == Idea) allTasks
-      today <- utctDay <$> getCurrentTime
+      today <- getCurrentLocalDate
       let syncable = filter (shouldSyncTask today) allTasks
       
       putStrLn ""
@@ -410,7 +418,7 @@ runList options = do
       putStrLn $ "❌ Failed to parse todo.txt: " ++ show err
       exitFailure
     Right sections -> do
-      today <- utctDay <$> getCurrentTime
+      today <- getCurrentLocalDate
       let allTasks = concatMap sectionEntries sections
       
       -- Apply filters
@@ -460,7 +468,7 @@ filterTask :: Day -> ListOptions -> Task -> Bool
 filterTask today options task = 
   dateFilter && contextFilter && completionFilter
   where
-    dateFilter = listAll options || shouldSyncTask today task
+    dateFilter = listAll options || taskDate task == today
     contextFilter = case listContext options of
       Nothing -> True
       Just ctx -> Context ctx `elem` taskContexts task
