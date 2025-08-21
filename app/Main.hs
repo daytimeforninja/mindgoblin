@@ -139,7 +139,7 @@ parseListOptions = ListOptions
 parseZettelOptions :: Parser ZettelOptions
 parseZettelOptions = ZettelOptions
   <$> optional (strOption (long "file" <> metavar "FILE" <> help "Use custom todo.txt file"))
-  <*> optional (strOption (long "notes-dir" <> metavar "DIR" <> help "Directory to write zettel files (default: ~/notes)"))
+  <*> optional (strOption (long "notes-dir" <> metavar "DIR" <> help "Directory to write zettel files (default: ~/doc/notes)"))
   <*> switch (long "dry-run" <> help "Show what zettels would be created")
 
 -- | Program options
@@ -568,7 +568,7 @@ getNotesDir :: Maybe FilePath -> IO FilePath
 getNotesDir (Just dir) = return dir
 getNotesDir Nothing = do
   home <- getHomeDirectory
-  return $ home </> "notes"
+  return $ home </> "doc" </> "notes"
 
 -- | Default mg configuration
 defaultConfig :: Text
