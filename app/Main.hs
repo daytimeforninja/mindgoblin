@@ -17,6 +17,7 @@ import MindGoblin.Types
 import MindGoblin.Parser
 import MindGoblin.FileOps
 import MindGoblin.VDirSyncer
+import MindGoblin.Zettel
 
 -- | CLI commands
 data Command
@@ -27,6 +28,7 @@ data Command
   | Watch WatchOptions
   | Stats StatsOptions
   | List ListOptions
+  | ZettelCmd ZettelOptions
   deriving (Show)
 
 -- | Sync command options
@@ -71,6 +73,13 @@ data ListOptions = ListOptions
   , listContext :: Maybe Text
   } deriving (Show)
 
+-- | Zettel command options
+data ZettelOptions = ZettelOptions
+  { zettelFile :: Maybe FilePath
+  , zettelNotesDir :: Maybe FilePath
+  , zettelDryRun :: Bool
+  } deriving (Show)
+
 -- | Parse command line arguments
 parseCommand :: Parser Command
 parseCommand = subparser $ mconcat
@@ -81,6 +90,7 @@ parseCommand = subparser $ mconcat
   , command "watch" (info (Watch <$> parseWatchOptions) (progDesc "Auto-sync on file changes"))
   , command "stats" (info (Stats <$> parseStatsOptions) (progDesc "Show task statistics"))
   , command "list" (info (List <$> parseListOptions) (progDesc "List tasks organized by priority"))
+  , command "zettel" (info (ZettelCmd <$> parseZettelOptions) (progDesc "Extract zettels to notes directory in denote format"))
   ]
 
 -- | Parse sync options
@@ -125,6 +135,13 @@ parseListOptions = ListOptions
   <*> switch (long "completed" <> help "Include completed tasks")
   <*> optional (strOption (long "context" <> metavar "CONTEXT" <> help "Filter by context (e.g., @work)"))
 
+-- | Parse zettel options
+parseZettelOptions :: Parser ZettelOptions
+parseZettelOptions = ZettelOptions
+  <$> optional (strOption (long "file" <> metavar "FILE" <> help "Use custom todo.txt file"))
+  <*> optional (strOption (long "notes-dir" <> metavar "DIR" <> help "Directory to write zettel files (default: ~/notes)"))
+  <*> switch (long "dry-run" <> help "Show what zettels would be created")
+
 -- | Program options
 opts :: ParserInfo Command
 opts = info (parseCommand <**> helper <**> versionOption)
@@ -161,6 +178,7 @@ runCommand (Init options) = runInit options
 runCommand (Watch options) = runWatch options
 runCommand (Stats options) = runStats options
 runCommand (List options) = runList options
+runCommand (ZettelCmd options) = runZettel options
 
 -- | Run sync command
 -- @implements: README.md#mg-sync
@@ -494,6 +512,32 @@ formatTask task =
       Nothing -> ""
       Just due -> " Due: " ++ show due
 
+-- | Run zettel command
+-- @implements: ZETTLE.md#cli-integration
+-- @user-story: Users run mg zettel to extract zettel tags to denote files
+-- @data-flow: todo.txt -> parse zettel tags -> create denote files in notes directory
+runZettel :: ZettelOptions -> IO ()
+runZettel options = do
+  putStrLn "🧠 Mind Goblin - Extracting Zettels..."
+  
+  todoFile <- getTodoFile (zettelFile options)
+  notesDir <- getNotesDir (zettelNotesDir options)
+  
+  when (zettelDryRun options) $ putStrLn "🔍 Dry run mode - no files will be created"
+  
+  content <- TIO.readFile todoFile
+  
+  if zettelDryRun options
+    then do
+      putStrLn ""
+      putStrLn "📋 Dry run mode - would process zettel tags from todo.txt"
+      putStrLn "💡 Use #zettel:slug, #z:slug, or #idea:slug in your todo.txt"
+    else do
+      putStrLn $ "📂 Processing zettel files to: " ++ notesDir
+      createDirectoryIfMissing True notesDir
+      processZettelsFromTodoText notesDir content
+      putStrLn "✅ Zettel processing complete!"
+
 -- | Get todo.txt file path
 getTodoFile :: Maybe FilePath -> IO FilePath
 getTodoFile (Just file) = return file
@@ -518,6 +562,13 @@ getCalendarPath :: IO FilePath
 getCalendarPath = do
   home <- getHomeDirectory
   return $ home </> ".cache" </> "calendars" </> "default"
+
+-- | Get notes directory path for zettels
+getNotesDir :: Maybe FilePath -> IO FilePath
+getNotesDir (Just dir) = return dir
+getNotesDir Nothing = do
+  home <- getHomeDirectory
+  return $ home </> "notes"
 
 -- | Default mg configuration
 defaultConfig :: Text
