@@ -30,9 +30,6 @@ spec = do
         it "parses scheduled bullet - user uses < for timed items" $ do
             parseBullet "<" `shouldBe` Right Scheduled
 
-        it "parses note bullet - user uses - for notes" $ do
-            parseBullet "-" `shouldBe` Right Note
-
         it "parses priority bullet - user uses ! for urgent" $ do
             parseBullet "!" `shouldBe` Right Priority
 
@@ -41,6 +38,9 @@ spec = do
 
         it "parses event bullet - user uses o for events" $ do
             parseBullet "o" `shouldBe` Right Event
+
+        it "parses shopping bullet - user uses $ for shopping items" $ do
+            parseBullet "$" `shouldBe` Right Shopping
 
         it "rejects invalid bullet character" $ do
             isLeft (parseBullet "#") `shouldBe` True

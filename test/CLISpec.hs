@@ -242,6 +242,143 @@ spec = do
                 -- Error handling works for invalid options
                 return ()
 
+        describe "mg list command" $ do
+            it "shows today's tasks by priority" $ withTempDir $ \tmpDir -> do
+                let todoFile = tmpDir </> "todo.txt"
+                today <- formatTime defaultTimeLocale "%Y-%m-%d" . utctDay <$> getCurrentTime
+                let content = T.pack $ unlines 
+                      [ today
+                      , ". Open task @work"
+                      , "! Priority task @urgent"
+                      , "$ Buy milk @groceries"
+                      , "x Completed task @done"
+                      , "o Meeting at 2pm @meetings"
+                      ]
+                TIO.writeFile todoFile content
+
+                (exitCode, stdout, _) <-
+                    readProcessWithExitCode
+                        "cabal"
+                        ["run", "mg", "--", "list", "--file", todoFile]
+                        ""
+
+                exitCode `shouldBe` ExitSuccess
+                stdout `shouldContain` "Priority Tasks:"
+                stdout `shouldContain` "! Priority task @urgent"
+                stdout `shouldContain` "Open Tasks:"
+                stdout `shouldContain` ". Open task @work"
+                stdout `shouldContain` "Shopping:"
+                stdout `shouldContain` "$ Buy milk @groceries"
+                stdout `shouldContain` "Events:"
+                stdout `shouldContain` "o Meeting at 2pm @meetings"
+                stdout `shouldContain` "Showing 4 tasks (today only)"
+
+            it "includes completed tasks with --completed flag" $ withTempDir $ \tmpDir -> do
+                let todoFile = tmpDir </> "todo.txt"
+                today <- formatTime defaultTimeLocale "%Y-%m-%d" . utctDay <$> getCurrentTime
+                let content = T.pack $ unlines 
+                      [ today
+                      , ". Open task"
+                      , "x Completed task"
+                      ]
+                TIO.writeFile todoFile content
+
+                (exitCode, stdout, _) <-
+                    readProcessWithExitCode
+                        "cabal"
+                        ["run", "mg", "--", "list", "--file", todoFile, "--completed"]
+                        ""
+
+                exitCode `shouldBe` ExitSuccess
+                stdout `shouldContain` "Completed:"
+                stdout `shouldContain` "x Completed task"
+                stdout `shouldContain` "Showing 2 tasks (today only)"
+
+            it "shows all tasks with --all flag" $ withTempDir $ \tmpDir -> do
+                let todoFile = tmpDir </> "todo.txt"
+                today <- formatTime defaultTimeLocale "%Y-%m-%d" . utctDay <$> getCurrentTime
+                let yesterday = "2025-08-19"
+                let content = T.pack $ unlines 
+                      [ today
+                      , ". Today's task"
+                      , yesterday
+                      , ". Yesterday's task"
+                      ]
+                TIO.writeFile todoFile content
+
+                (exitCode, stdout, _) <-
+                    readProcessWithExitCode
+                        "cabal"
+                        ["run", "mg", "--", "list", "--file", todoFile, "--all"]
+                        ""
+
+                exitCode `shouldBe` ExitSuccess
+                stdout `shouldContain` ". Today's task"
+                stdout `shouldContain` ". Yesterday's task"
+                stdout `shouldContain` "Showing 2 tasks"
+                stdout `shouldNotContain` "(today only)"
+
+            it "filters by context with --context flag" $ withTempDir $ \tmpDir -> do
+                let todoFile = tmpDir </> "todo.txt"
+                today <- formatTime defaultTimeLocale "%Y-%m-%d" . utctDay <$> getCurrentTime
+                let content = T.pack $ unlines 
+                      [ today
+                      , ". Work task @work"
+                      , ". Home task @home"
+                      , ". Another work task @work"
+                      ]
+                TIO.writeFile todoFile content
+
+                (exitCode, stdout, _) <-
+                    readProcessWithExitCode
+                        "cabal"
+                        ["run", "mg", "--", "list", "--file", todoFile, "--context", "work"]
+                        ""
+
+                exitCode `shouldBe` ExitSuccess
+                stdout `shouldContain` ". Work task @work"
+                stdout `shouldContain` ". Another work task @work"
+                stdout `shouldNotContain` ". Home task @home"
+                stdout `shouldContain` "Showing 2 tasks (today only)"
+
+            it "handles empty file gracefully" $ withTempDir $ \tmpDir -> do
+                let todoFile = tmpDir </> "empty.txt"
+                TIO.writeFile todoFile ""
+
+                (exitCode, stdout, _) <-
+                    readProcessWithExitCode
+                        "cabal"
+                        ["run", "mg", "--", "list", "--file", todoFile]
+                        ""
+
+                exitCode `shouldBe` ExitSuccess
+                stdout `shouldContain` "Showing 0 tasks (today only)"
+
+            it "accepts --file option" $ withTempDir $ \tmpDir -> do
+                let customFile = tmpDir </> "custom.txt"
+                today <- formatTime defaultTimeLocale "%Y-%m-%d" . utctDay <$> getCurrentTime
+                let content = T.pack $ unlines [today, ". Custom task"]
+                TIO.writeFile customFile content
+
+                (exitCode, stdout, _) <-
+                    readProcessWithExitCode
+                        "cabal"
+                        ["run", "mg", "--", "list", "--file", customFile]
+                        ""
+
+                exitCode `shouldBe` ExitSuccess
+                stdout `shouldContain` ". Custom task"
+                stdout `shouldContain` "Showing 1 tasks (today only)"
+
+            it "handles missing file gracefully" $ do
+                (exitCode, _, _) <-
+                    readProcessWithExitCode
+                        "cabal"
+                        ["run", "mg", "--", "list", "--file", "/nonexistent/file.txt"]
+                        ""
+
+                exitCode `shouldNotBe` ExitSuccess
+
 -- Helper functions
 
 withTempDir :: (FilePath -> IO a) -> IO a

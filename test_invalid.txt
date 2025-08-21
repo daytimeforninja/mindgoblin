@@ -1,0 +1,7 @@
+2025-08-21
+. Valid task @work
+# Invalid bullet type
+& Another invalid bullet
+~ Yet another invalid
+Valid freeform text
+. Another valid task

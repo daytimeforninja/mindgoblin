@@ -103,7 +103,7 @@ spec = do
 
 -- Generate valid bullet characters
 instance Arbitrary Bullet where
-    arbitrary = elements [Open, Completed, Migrated, Scheduled, Note, Priority, Idea, Event]
+    arbitrary = elements [Open, Completed, Migrated, Scheduled, Priority, Idea, Event, Shopping]
 
 -- Generate reasonable task text (avoiding problematic characters)
 instance Arbitrary T.Text where
@@ -137,7 +137,7 @@ bulletToChar Open = '.'
 bulletToChar Completed = 'x'
 bulletToChar Migrated = '>'
 bulletToChar Scheduled = '<'
-bulletToChar Note = '-'
 bulletToChar Priority = '!'
 bulletToChar Idea = '*'
 bulletToChar Event = 'o'
+bulletToChar Shopping = '$'

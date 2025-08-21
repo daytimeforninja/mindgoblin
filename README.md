@@ -35,11 +35,13 @@ Mind Goblin implements a comprehensive bullet journal notation parser supporting
 - `.` - Open tasks requiring action
 - `x` - Completed tasks 
 - `!` - High-priority urgent tasks
+- `$` - Shopping list items
 - `o` - Events and appointments
 - `<` - Scheduled tasks with specific timing
 - `>` - Migrated tasks moved to different time periods
-- `-` - Notes and reference information
 - `*` - Ideas and future considerations
+
+**Freeform text** (lines without bullets) can be used for notes, reflections, and journal entries. This content is preserved in your todo.txt file but remains local-only for now.
 
 ### Bidirectional Synchronization
 The system maintains real-time bidirectional synchronization between local text files and remote CalDAV endpoints. Task state modifications in either location are automatically detected and propagated to all synchronized endpoints within the next sync cycle.
@@ -58,9 +60,13 @@ Mind Goblin operates on plaintext files following a date-sectioned format with b
 ```
 2025-08-17
 . Buy groceries @errands
+$ Milk and bread @groceries
 ! Call dentist @urgent Due: 2025-08-18
 x Finished project @work
-- Meeting notes: discussed Q4 plans
+Meeting notes: discussed Q4 plans
+- Reviewed roadmap priorities  
+- Customer feedback positive
+- Need mobile app features
 ```
 
 ### Date Sections
@@ -90,6 +96,7 @@ This approach ensures your calendar app shows only what's actionable today while
 mg sync    # Execute complete bidirectional synchronization cycle
 mg push    # Upload local tasks to calendar endpoints (unidirectional)
 mg pull    # Download task state changes from calendar endpoints (unidirectional)
+mg list    # Display today's tasks organized by priority with filtering options
 mg init    # Initialize configuration and establish vdirsyncer connection
 mg stats   # Display comprehensive task statistics and metrics
 mg watch   # Enable continuous file monitoring with automatic synchronization
@@ -111,6 +118,41 @@ Establishes initial system configuration including:
 - vdirsyncer configuration validation
 - Calendar endpoint discovery and authentication
 - Initial synchronization state establishment
+
+#### `mg list`
+Displays tasks organized by priority with intelligent filtering options:
+- **Priority hierarchy**: Shows tasks in order of urgency (Priority → Open → Events → Completed)
+- **Today-only default**: By default shows only today's actionable tasks
+- **Context filtering**: Filter tasks by specific contexts (e.g., `--context work`)
+- **Date filtering**: Use `--all` to show tasks from all dates
+- **Completion filtering**: Use `--completed` to include completed tasks in output
+- **Custom files**: Use `--file` to specify alternative todo.txt files
+
+**Usage examples:**
+```bash
+mg list                           # Show today's tasks by priority
+mg list --all                     # Show all tasks from all dates
+mg list --completed               # Include completed tasks
+mg list --context work            # Show only @work tasks
+mg list --file ~/work.txt --all   # Use custom file and show all tasks
+```
+
+**Output format:**
+```
+🔥 Priority Tasks:
+! Fix production bug @urgent @computer Due: 2025-08-21
+
+📋 Open Tasks:
+. Review code changes @computer
+
+🛒 Shopping:
+$ Milk and bread @groceries
+
+📅 Events:
+o Team standup 10am @meetings
+
+📊 Showing 4 tasks (today only)
+```
 
 ## Setup and Configuration
 
@@ -164,7 +206,9 @@ The system automatically generates configuration files optimized for most use ca
 
 ### Diagnostic Commands
 ```bash
-mg stats                    # Display system status and task counts  
+mg stats                    # Display system status and task counts
+mg list                     # Show today's actionable tasks by priority  
+mg list --all               # Show all tasks across all dates
 vdirsyncer sync tasks      # Test direct vdirsyncer functionality
 mg init --force            # Reset configuration (destructive)
 ```

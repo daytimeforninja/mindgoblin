@@ -28,14 +28,14 @@ data Bullet
       Migrated
     | -- | < (timed)
       Scheduled
-    | -- | - (info)
-      Note
     | -- | ! (urgent)
       Priority
     | -- | * (future)
       Idea
     | -- | o (appointment)
       Event
+    | -- | $ (shopping item)
+      Shopping
     deriving (Eq, Show, Enum, Bounded, Generic)
 
 {- | A single task entry
@@ -112,7 +112,7 @@ shouldSyncTask today task =
         Priority -> True -- ! urgent tasks
         Scheduled -> True -- < scheduled tasks
         Event -> True -- o events/appointments
-        Note -> False -- - notes don't sync
+        Shopping -> True -- $ shopping items to buy
         Idea -> False
         -- \* ideas/future items don't sync
         Migrated -> False -- > migrated tasks don't sync

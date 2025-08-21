@@ -1,8 +1,13 @@
-2025-08-20
+2025-08-21
 . Review code changes @computer
 ! Fix production bug @urgent @computer Due: 2025-08-21
 x Submit expense report @computer
-- Meeting notes: Discussed Q4 planning
+$ Buy milk @groceries
+$ Bread and eggs @groceries
+Meeting notes: Discussed Q4 planning
+- Reviewed roadmap priorities
+- Customer feedback was positive
+- Need to finalize mobile app features
 o Team standup 10am @meetings
 * Consider switching to event sourcing
 > Research new framework @computer

@@ -34,10 +34,10 @@ bulletParser =
         , Completed <$ char 'x'
         , Migrated <$ char '>'
         , Scheduled <$ char '<'
-        , Note <$ char '-'
         , Priority <$ char '!'
         , Idea <$ char '*'
         , Event <$ char 'o'
+        , Shopping <$ char '$'
         ]
 
 {- | Parse bullet journal notation symbols

@@ -1,0 +1,15 @@
+2025-08-21
+. Regular task @work
+- This used to be a note bullet but should now be freeform
+Meeting notes from today
+  - Indented line that looks like a note
+  - Another indented line
+! Priority task @urgent
+x Completed task
+$ Shopping item @groceries
+
+Some thoughts about the project:
+The new approach is working well.
+We should continue this direction.
+
+o Team meeting 2pm @meetings
