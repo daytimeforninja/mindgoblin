@@ -1,6 +1,6 @@
 cabal-version:      3.0
 name:               mg
-version:            1.3.0.0
+version:            1.3.1.0
 synopsis:           Mind Goblin - Bullet journal todo.txt to CalDAV sync
 description:        Plain text task management with bullet journal notation and CalDAV sync via vdirsyncer.
                     Maintains a clean ~/todo.txt file while syncing tasks to calendar apps.

@@ -150,7 +150,7 @@ opts = info (parseCommand <**> helper <**> versionOption)
   <> header "mg - bullet journal CalDAV sync via vdirsyncer"
   )
   where
-    versionOption = infoOption "mg 1.3.0.0"
+    versionOption = infoOption "mg 1.3.1.0"
       ( long "version"
       <> short 'v'
       <> help "Show version information" )
@@ -200,6 +200,12 @@ runSync options = do
       putStrLn $ "❌ Failed to parse todo.txt: " ++ show err
       exitFailure
     Right sections -> do
+      -- Step 1.5: Extract zettels from todo.txt (unless dry run)
+      unless (syncDryRun options) $ do
+        putStrLn "📝 Processing zettel tags..."
+        notesDir <- getNotesDir Nothing  -- Use default ~/doc/notes
+        processZettelsFromTodoText notesDir content
+      
       today <- getCurrentLocalDate
       let allTasks = concatMap sectionEntries sections
       let syncableTasks = filter (shouldSyncTask today) allTasks
