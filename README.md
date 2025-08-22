@@ -1,56 +1,50 @@
 # Mind Goblin
 
-A comprehensive bullet journal task synchronization system implementing bidirectional CalDAV integration through vdirsyncer middleware.
+Bullet journal task synchronization with CalDAV via vdirsyncer.
 
 ## Overview
 
-Mind Goblin (`mg`) is a command-line task management solution designed to maintain synchronization between plain text bullet journal files and CalDAV-compatible calendar services. The system provides complete bidirectional synchronization, ensuring that task state changes in either the local text file or remote calendar applications are propagated to all connected endpoints.
+Mind Goblin (`mg`) synchronizes plain text bullet journal files with CalDAV calendar services. Changes made in either the local text file or calendar applications are propagated bidirectionally.
 
-The application implements a robust parsing engine for bullet journal notation, supporting the full spectrum of bullet journal methodologies while maintaining strict compatibility with industry-standard CalDAV protocols. All synchronization operations are performed through the vdirsyncer framework, ensuring reliable communication with diverse calendar service providers including Google Calendar, iCloud, FastMail, and self-hosted solutions.
+The parser supports standard bullet journal notation and generates RFC 5545-compliant iCalendar data. All CalDAV communication is handled through vdirsyncer.
 
 ## Installation
 
-Mind Goblin is distributed through the Nix package manager, providing reproducible builds and dependency management across all supported platforms.
-
-### Evaluation Installation
-For initial testing and evaluation purposes:
+### Evaluation
 ```bash
 nix run github:daytimeforninja/mindgoblin -- init
 nix run github:daytimeforninja/mindgoblin -- sync
 ```
 
-### Production Installation
-For permanent system integration:
+### Installation
 ```bash
 nix profile install github:daytimeforninja/mindgoblin
 mg init && mg sync
 ```
 
-The installation process will automatically configure all required dependencies including the vdirsyncer synchronization engine and establish the necessary directory structures for optimal operation.
-
 ## Core Features
 
-### Bullet Journal Notation System
-Mind Goblin implements a comprehensive bullet journal notation parser supporting the following standardized symbols:
-- `.` - Open tasks requiring action
+### Bullet Journal Notation
+Supported symbols:
+- `.` - Open tasks
 - `x` - Completed tasks 
-- `!` - High-priority urgent tasks
-- `$` - Shopping list items
-- `o` - Events and appointments
-- `<` - Scheduled tasks with specific timing
-- `>` - Migrated tasks moved to different time periods
-- `*` - Ideas and future considerations
+- `!` - Priority tasks
+- `$` - Shopping items
+- `o` - Events
+- `<` - Scheduled tasks
+- `>` - Migrated tasks
+- `*` - Ideas
 
-**Freeform text** (lines without bullets) can be used for notes, reflections, and journal entries. This content is preserved in your todo.txt file but remains local-only for now.
+Freeform text (lines without bullets) is preserved locally but not synced.
 
-### Bidirectional Synchronization
-The system maintains real-time bidirectional synchronization between local text files and remote CalDAV endpoints. Task state modifications in either location are automatically detected and propagated to all synchronized endpoints within the next sync cycle.
+### Synchronization
+Bidirectional sync between local text files and CalDAV endpoints. Changes in either location are propagated on the next sync cycle.
 
-### CalDAV Protocol Compliance
-Full compliance with RFC 5545 (iCalendar) and RFC 4791 (CalDAV) specifications, ensuring compatibility with industry-standard calendar services and self-hosted solutions.
+### CalDAV Compliance
+RFC 5545 (iCalendar) and RFC 4791 (CalDAV) compliant.
 
 ### Zettelkasten Integration
-Mind Goblin seamlessly integrates zettelkasten-style knowledge management into your bullet journal workflow. Use `#z:slug` tags to capture fleeting thoughts that get automatically converted to denote-format files:
+Use `#z:slug` tags to extract notes to denote-format files:
 
 ```
 2025-08-17
@@ -60,15 +54,15 @@ Mind Goblin seamlessly integrates zettelkasten-style knowledge management into y
   - Focus on systems, not just goals
 ```
 
-The `mg sync` command processes both tasks (for CalDAV) and zettel tags (for knowledge management), creating properly formatted denote files in `~/doc/notes/`.
+`mg sync` processes tasks for CalDAV and zettel tags for denote files in `~/doc/notes/`.
 
 ### Vdirsyncer Integration
-Native integration with vdirsyncer provides robust, tested synchronization capabilities with comprehensive error handling and conflict resolution.
+Uses vdirsyncer for CalDAV communication.
 
-## File Format Specification
+## File Format
 
 ### Structure
-Mind Goblin operates on plaintext files following a date-sectioned format with bullet journal notation:
+Date-sectioned plaintext with bullet journal notation:
 
 ```
 2025-08-17
@@ -83,57 +77,52 @@ Meeting notes: discussed Q4 plans
 ```
 
 ### Date Sections
-Files are organized by date headers in ISO 8601 format (YYYY-MM-DD). Each date section contains all tasks and entries for that specific day.
+Files organized by date headers (YYYY-MM-DD format).
 
 ### Context Tags
-Tasks may include context tags using the `@context` notation, enabling categorization and filtering capabilities. Multiple contexts per task are supported.
+Use `@context` notation for categorization. Multiple contexts per task supported.
 
 ### Due Dates
-Tasks may specify due dates using the format `Due: YYYY-MM-DD`. Due date information is synchronized to the calendar application's due date field.
+Format: `Due: YYYY-MM-DD`
 
 ### Synchronization Behavior
-When `mg sync` is executed, the system performs a complete bidirectional synchronization cycle with **today-only filtering**:
+`mg sync` performs bidirectional synchronization with today-only filtering:
 
-- **Calendar sync**: Only tasks from today's date are synchronized to your calendar application, keeping it focused and uncluttered
-- **Historical record**: Your complete todo.txt file maintains the full historical record of all tasks across all dates
-- **Bidirectional updates**: Tasks marked complete in calendar applications are detected and updated in the local text file
-- **Task modifications**: Changes are propagated in both directions for today's tasks only
-
-This approach ensures your calendar app shows only what's actionable today while preserving the complete bullet journal history in your text file.
+- Only today's tasks sync to calendar apps
+- Complete history remains in todo.txt
+- Completion status syncs bidirectionally
+- Calendar shows actionable items, text file preserves history
 
 ## Command Reference
 
 ### Primary Commands
 
 ```bash
-mg sync    # Execute complete bidirectional synchronization cycle
-mg push    # Upload local tasks to calendar endpoints (unidirectional)
-mg pull    # Download task state changes from calendar endpoints (unidirectional)
-mg zettel  # Extract zettel tags to denote-format files in ~/doc/notes
-mg list    # Display today's tasks organized by priority with filtering options
-mg init    # Initialize configuration and establish vdirsyncer connection
-mg stats   # Display comprehensive task statistics and metrics
-mg watch   # Enable continuous file monitoring with automatic synchronization
+mg sync    # Bidirectional sync with CalDAV and zettel extraction
+mg push    # Upload tasks to calendar (one-way)
+mg pull    # Download task changes from calendar (one-way)
+mg zettel  # Extract #z: tags to denote files
+mg list    # Show today's tasks by priority
+mg init    # Setup configuration and vdirsyncer
+mg stats   # Task statistics
+mg watch   # Auto-sync on file changes
 ```
 
 ### Command Details
 
 #### `mg sync`
-Performs a complete bidirectional synchronization cycle including:
-1. Upload of new local tasks to calendar endpoints
-2. Download of task state changes from calendar endpoints
-3. Extract zettel tags to denote-format files
-4. Execution of vdirsyncer sync operations
-5. Update of local file with remote changes
-6. Conflict resolution and error handling
+1. Upload local tasks to calendar
+2. Download task changes from calendar
+3. Extract zettel tags to denote files
+4. Run vdirsyncer sync
+5. Update local file with remote changes
 
 #### `mg zettel`
-Extracts zettelkasten-style notes from todo.txt into denote-format files:
-- **Pattern recognition**: Scans for `#z:slug` tags in todo.txt
-- **Denote format**: Creates properly formatted files with timestamps and metadata
-- **Deduplication**: Skips creation if file already exists (prevents overwrites)
-- **Custom locations**: Use `--file` for different source files, `--notes-dir` for custom output directory
-- **Preview mode**: Use `--dry-run` to see what would be created without making changes
+Extracts `#z:slug` tags to denote-format files:
+- Scans todo.txt for zettel tags
+- Creates timestamped files with metadata
+- Skips existing files (no overwrites)
+- Options: `--file`, `--notes-dir`, `--dry-run`
 
 **Usage examples:**
 ```bash
@@ -144,20 +133,19 @@ mg zettel --notes-dir ~/notes          # Custom output directory
 ```
 
 #### `mg init`
-Establishes initial system configuration including:
-- Creation of required directory structures
-- vdirsyncer configuration validation
-- Calendar endpoint discovery and authentication
-- Initial synchronization state establishment
+Setup configuration:
+- Create directory structures
+- Validate vdirsyncer config
+- Calendar endpoint discovery
+- Initial sync state
 
 #### `mg list`
-Displays tasks organized by priority with intelligent filtering options:
-- **Priority hierarchy**: Shows tasks in order of urgency (Priority → Open → Events → Completed)
-- **Today-only default**: By default shows only today's actionable tasks
-- **Context filtering**: Filter tasks by specific contexts (e.g., `--context work`)
-- **Date filtering**: Use `--all` to show tasks from all dates
-- **Completion filtering**: Use `--completed` to include completed tasks in output
-- **Custom files**: Use `--file` to specify alternative todo.txt files
+Shows tasks by priority (Priority → Open → Events → Completed):
+- Default: today's tasks only
+- `--all`: show all dates
+- `--completed`: include completed tasks  
+- `--context work`: filter by context
+- `--file`: specify custom file
 
 **Usage examples:**
 ```bash
