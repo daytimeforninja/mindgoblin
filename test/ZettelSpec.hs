@@ -24,7 +24,7 @@ spec = do
         it "generates denote filename from zettel - follows timestamp--slug__keywords.txt format" $ do
             -- User story: "My zettel becomes a properly named denote file"
             -- Data flow: Zettel -> timestamp -> slug -> keywords -> filename
-            let zettel = Zettel "atomic-design" "Modular architecture principles" [] ["software", "architecture"] ZettelFull
+            let zettel = Zettel "atomic-design" "Modular architecture principles" [] ["software", "architecture"] ZettelNote
             let timestamp = "20250821T143022"
             let expectedFilename = "20250821T143022--atomic-design__software_architecture.txt"
             generateDenotFilename timestamp zettel `shouldBe` expectedFilename
@@ -32,7 +32,7 @@ spec = do
         it "generates denote front matter - includes title, date, filetags, identifier" $ do
             -- User story: "My zettel file has proper denote metadata"
             -- Data flow: Zettel -> front matter generation -> denote header
-            let zettel = Zettel "meeting-notes" "Team dynamics discussion" ["Key insights", "Action items"] ["meetings", "team"] ZettelFull
+            let zettel = Zettel "meeting-notes" "Team dynamics discussion" ["Key insights", "Action items"] ["meetings", "team"] ZettelNote
             let timestamp = "20250821T143022"
             let frontMatter = generateDenoteFrontMatter timestamp zettel
             T.lines frontMatter `shouldContain` ["title:      Team dynamics discussion"]
@@ -46,7 +46,7 @@ spec = do
             -- Data flow: Zettel -> front matter + content -> complete file
             let zettel = Zettel "atomic-design" "Modular architecture principles" 
                                ["- Single responsibility per component", "- Clear interfaces between modules"]
-                               ["software", "architecture"] ZettelFull
+                               ["software", "architecture"] ZettelNote
             let timestamp = "20250821T143022"
             let fileContent = generateDenoteFileContent timestamp zettel
             
@@ -71,25 +71,19 @@ spec = do
         it "generates different keywords based on zettel type" $ do
             -- User story: "Different zettel types get appropriate keywords"
             -- Data flow: ZettelType -> semantic keywords -> denote tags
-            let zettelFull = Zettel "test" "content" [] [] ZettelFull
-            let zettelShort = Zettel "test" "content" [] [] ZettelShort  
-            let zettelIdea = Zettel "test" "content" [] [] ZettelIdea
+            let zettelNote = Zettel "test" "content" [] [] ZettelNote
             
-            let keywordsFull = generateZettelTypeKeywords zettelFull
-            let keywordsShort = generateZettelTypeKeywords zettelShort
-            let keywordsIdea = generateZettelTypeKeywords zettelIdea
+            let keywords = generateZettelTypeKeywords zettelNote
             
-            -- Test all keywords for complete coverage
-            keywordsFull `shouldBe` ["permanent-notes", "zettelkasten"]
-            keywordsShort `shouldBe` ["fleeting-notes", "quick-capture"]
-            keywordsIdea `shouldBe` ["ideas", "projects", "future"]
+            -- Test keywords for single type
+            keywords `shouldBe` ["zettel", "notes"]
 
     describe "File System Operations (ZETTLE.md#file-system)" $ do
         it "creates zettel file in notes directory - atomic write with temp file" $ do
             -- User story: "My zettel safely becomes a file on disk"
             -- Data flow: Zettel -> temp file -> atomic rename -> final file
             withTestNotesDir $ \notesDir -> do
-                let zettel = Zettel "test-zettel" "Test content" [] ["test"] ZettelFull
+                let zettel = Zettel "test-zettel" "Test content" [] ["test"] ZettelNote
                 currentTime <- getCurrentTime
                 let timestamp = formatDenoteTimestamp currentTime
                 
@@ -110,7 +104,7 @@ spec = do
             -- Data flow: Missing directory -> createDirectoryIfMissing -> ready for files
             withTempDir $ \tempDir -> do
                 let notesDir = tempDir </> "notes"
-                let zettel = Zettel "test" "content" [] [] ZettelFull
+                let zettel = Zettel "test" "content" [] [] ZettelNote
                 currentTime <- getCurrentTime
                 let timestamp = formatDenoteTimestamp currentTime
                 
@@ -128,14 +122,14 @@ spec = do
             -- User story: "Duplicate zettel slugs don't overwrite files"
             -- Data flow: Existing file -> conflict detection -> append counter
             withTestNotesDir $ \notesDir -> do
-                let zettel = Zettel "conflict-test" "First content" [] [] ZettelFull
+                let zettel = Zettel "conflict-test" "First content" [] [] ZettelNote
                 let timestamp = "20250821T143022"
                 
                 -- Create first file
                 createZettelFile notesDir timestamp zettel
                 
                 -- Create second file with same slug
-                let zettel2 = Zettel "conflict-test" "Second content" [] [] ZettelFull
+                let zettel2 = Zettel "conflict-test" "Second content" [] [] ZettelNote
                 createZettelFile notesDir timestamp zettel2
                 
                 -- Should have two files
@@ -156,10 +150,10 @@ spec = do
                 let todoContent = T.unlines
                         [ "2025-08-21"
                         , ". Regular task @work"
-                        , "#zettel:atomic-design Modular architecture principles"
+                        , "#z:atomic-design Modular architecture principles"
                         , "  - Single responsibility per component"
                         , "#z:quick-note Personal knowledge management insights"
-                        , "#idea:future-project What if mg had a web interface?"
+                        , "#z:future-project What if mg had a web interface?"
                         ]
                 
                 processZettelsFromTodoText notesDir todoContent
@@ -199,14 +193,14 @@ spec = do
 
         it "generates filename with no keywords" $ do
             -- Test generateDenotFilename with empty keywords
-            let zettel = Zettel "no-keywords" "Test content" [] [] ZettelFull
+            let zettel = Zettel "no-keywords" "Test content" [] [] ZettelNote
             let timestamp = "20250821T143022"
             let filename = generateDenotFilename timestamp zettel
             filename `shouldBe` "20250821T143022--no-keywords.txt"
             
         it "generates front matter with empty keywords" $ do
             -- Test generateDenoteFrontMatter with empty keywords  
-            let zettel = Zettel "no-keywords" "Test content" [] [] ZettelFull
+            let zettel = Zettel "no-keywords" "Test content" [] [] ZettelNote
             let timestamp = "20250821T143022"
             let frontMatter = generateDenoteFrontMatter timestamp zettel
             T.isInfixOf "filetags:   " frontMatter `shouldBe` True
@@ -217,21 +211,21 @@ spec = do
                 let todoContent = T.unlines
                         [ "2025-08-21"
                         , ". Regular task"
-                        , "#zettel:full-type Complete zettelkasten entry"
+                        , "#z:full-type Complete zettelkasten entry"
                         , "#z:short-type Quick fleeting thought"  
-                        , "#idea:idea-type Future project concept"
+                        , "#z:idea-type Future project concept"
                         ]
                 processZettelsFromTodoText notesDir todoContent
                 
                 files <- listDirectory notesDir
-                -- Should create files for ZettelFull, ZettelShort, ZettelIdea
+                -- Should create files for all ZettelNote types
                 length files `shouldBe` 3
 
         it "handles multiple filename conflicts recursively" $ do
             -- User story: "Multiple conflicts increment counter properly"
             -- Data flow: Multiple conflicts -> recursive counter increment
             withTestNotesDir $ \notesDir -> do
-                let zettel = Zettel "multi-conflict" "Test content" [] [] ZettelFull
+                let zettel = Zettel "multi-conflict" "Test content" [] [] ZettelNote
                 let timestamp = "20250821T143022"
                 
                 -- Create first file

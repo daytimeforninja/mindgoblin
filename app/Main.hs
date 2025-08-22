@@ -150,7 +150,7 @@ opts = info (parseCommand <**> helper <**> versionOption)
   <> header "mg - bullet journal CalDAV sync via vdirsyncer"
   )
   where
-    versionOption = infoOption "mg 1.3.1.0"
+    versionOption = infoOption "mg 1.3.2.0"
       ( long "version"
       <> short 'v'
       <> help "Show version information" )
@@ -537,7 +537,7 @@ runZettel options = do
     then do
       putStrLn ""
       putStrLn "📋 Dry run mode - would process zettel tags from todo.txt"
-      putStrLn "💡 Use #zettel:slug, #z:slug, or #idea:slug in your todo.txt"
+      putStrLn "💡 Use #z:slug tags in your todo.txt"
     else do
       putStrLn $ "📂 Processing zettel files to: " ++ notesDir
       createDirectoryIfMissing True notesDir

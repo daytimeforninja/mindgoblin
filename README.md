@@ -49,6 +49,19 @@ The system maintains real-time bidirectional synchronization between local text 
 ### CalDAV Protocol Compliance
 Full compliance with RFC 5545 (iCalendar) and RFC 4791 (CalDAV) specifications, ensuring compatibility with industry-standard calendar services and self-hosted solutions.
 
+### Zettelkasten Integration
+Mind Goblin seamlessly integrates zettelkasten-style knowledge management into your bullet journal workflow. Use `#z:slug` tags to capture fleeting thoughts that get automatically converted to denote-format files:
+
+```
+2025-08-17
+. Review quarterly plans @work
+#z:atomic-habits Small changes compound for massive results over time
+  - Environment design beats willpower
+  - Focus on systems, not just goals
+```
+
+The `mg sync` command processes both tasks (for CalDAV) and zettel tags (for knowledge management), creating properly formatted denote files in `~/doc/notes/`.
+
 ### Vdirsyncer Integration
 Native integration with vdirsyncer provides robust, tested synchronization capabilities with comprehensive error handling and conflict resolution.
 
@@ -96,6 +109,7 @@ This approach ensures your calendar app shows only what's actionable today while
 mg sync    # Execute complete bidirectional synchronization cycle
 mg push    # Upload local tasks to calendar endpoints (unidirectional)
 mg pull    # Download task state changes from calendar endpoints (unidirectional)
+mg zettel  # Extract zettel tags to denote-format files in ~/doc/notes
 mg list    # Display today's tasks organized by priority with filtering options
 mg init    # Initialize configuration and establish vdirsyncer connection
 mg stats   # Display comprehensive task statistics and metrics
@@ -108,9 +122,26 @@ mg watch   # Enable continuous file monitoring with automatic synchronization
 Performs a complete bidirectional synchronization cycle including:
 1. Upload of new local tasks to calendar endpoints
 2. Download of task state changes from calendar endpoints
-3. Execution of vdirsyncer sync operations
-4. Update of local file with remote changes
-5. Conflict resolution and error handling
+3. Extract zettel tags to denote-format files
+4. Execution of vdirsyncer sync operations
+5. Update of local file with remote changes
+6. Conflict resolution and error handling
+
+#### `mg zettel`
+Extracts zettelkasten-style notes from todo.txt into denote-format files:
+- **Pattern recognition**: Scans for `#z:slug` tags in todo.txt
+- **Denote format**: Creates properly formatted files with timestamps and metadata
+- **Deduplication**: Skips creation if file already exists (prevents overwrites)
+- **Custom locations**: Use `--file` for different source files, `--notes-dir` for custom output directory
+- **Preview mode**: Use `--dry-run` to see what would be created without making changes
+
+**Usage examples:**
+```bash
+mg zettel                              # Extract from ~/todo.txt to ~/doc/notes
+mg zettel --dry-run                    # Preview what would be extracted
+mg zettel --file work.txt              # Extract from custom file
+mg zettel --notes-dir ~/notes          # Custom output directory
+```
 
 #### `mg init`
 Establishes initial system configuration including:

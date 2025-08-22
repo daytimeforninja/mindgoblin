@@ -216,7 +216,7 @@ spec = do
                 , zettelContent = "Test content"
                 , zettelContinuation = ["Line 1", "Line 2"]
                 , zettelKeywords = ["keyword1", "keyword2"]
-                , zettelType = ZettelFull
+                , zettelType = ZettelNote
                 }
 
         it "tests Zettel constructor and fields" $ do
@@ -225,14 +225,14 @@ spec = do
             zettelContent testZettel `shouldBe` "Test content"
             zettelContinuation testZettel `shouldBe` ["Line 1", "Line 2"]
             zettelKeywords testZettel `shouldBe` ["keyword1", "keyword2"]
-            zettelType testZettel `shouldBe` ZettelFull
+            zettelType testZettel `shouldBe` ZettelNote
 
         it "tests minimal Zettel" $ do
             -- @user-story: "Zettels work with minimal data"
-            let minimalZettel = Zettel "slug" "content" [] [] ZettelShort
+            let minimalZettel = Zettel "slug" "content" [] [] ZettelNote
             zettelContinuation minimalZettel `shouldBe` []
             zettelKeywords minimalZettel `shouldBe` []
-            zettelType minimalZettel `shouldBe` ZettelShort
+            zettelType minimalZettel `shouldBe` ZettelNote
 
         it "tests Zettel Eq instance" $ do
             -- @user-story: "Zettels can be compared"
@@ -252,20 +252,16 @@ spec = do
     describe "ZettelType Type Coverage" $ do
         it "tests all ZettelType constructors" $ do
             -- @user-story: "All zettel types are available"
-            let allTypes = [ZettelFull, ZettelShort, ZettelIdea]
-            length allTypes `shouldBe` 3
+            let allTypes = [ZettelNote]
+            length allTypes `shouldBe` 1
 
         it "tests ZettelType Eq instance" $ do
             -- @user-story: "Zettel types can be compared"
-            ZettelFull `shouldBe` ZettelFull
-            ZettelShort `shouldBe` ZettelShort
-            ZettelFull `shouldNotBe` ZettelShort
+            ZettelNote `shouldBe` ZettelNote
 
         it "tests ZettelType Show instance" $ do
             -- @user-story: "Zettel types can be displayed"
-            show ZettelFull `shouldBe` "ZettelFull"
-            show ZettelShort `shouldBe` "ZettelShort"
-            show ZettelIdea `shouldBe` "ZettelIdea"
+            show ZettelNote `shouldBe` "ZettelNote"
 
     describe "shouldSyncTask Function Coverage" $ do
         let today = fromGregorian 2025 8 21
@@ -340,8 +336,8 @@ spec = do
             let parseError = NoDateSection :: ParseError
             let vtodoStatus = NeedsAction :: VTodoStatus
             let priority = HighPriority :: Priority
-            let zettel = Zettel "slug" "content" [] [] ZettelFull :: Zettel
-            let zettelType = ZettelFull :: ZettelType
+            let zettel = Zettel "slug" "content" [] [] ZettelNote :: Zettel
+            let zettelType = ZettelNote :: ZettelType
             
             -- If these compile, Generic instances are working
             bullet `shouldBe` Open
@@ -352,4 +348,4 @@ spec = do
             vtodoStatus `shouldBe` NeedsAction
             priority `shouldBe` HighPriority
             zettelSlug zettel `shouldBe` "slug"
-            zettelType `shouldBe` ZettelFull
+            zettelType `shouldBe` ZettelNote

@@ -115,14 +115,12 @@ data Zettel = Zettel
     }
     deriving (Eq, Show, Generic)
 
-{- | Types of zettel entries
+{- | Types of zettel entries (simplified to single type)
 @test-spec: ZETTLE.md#parsing
 @implements: ZETTLE.md#syntax-design
 -}
 data ZettelType
-    = ZettelFull -- #zettel:slug - complete zettelkasten entry
-    | ZettelShort -- #z:slug - quick fleeting thought
-    | ZettelIdea -- #idea:slug - project concept or future idea
+    = ZettelNote -- #z:slug - zettel note (can evolve from fleeting to permanent)
     deriving (Eq, Show, Generic)
 
 {- | Determine if a task should be synced to CalDAV

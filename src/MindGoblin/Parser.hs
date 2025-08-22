@@ -297,7 +297,7 @@ fromGregorian y m d = case fromGregorianValid y m d of
 {- | Parse zettelkasten tag from text line  
 @test-spec: ZETTLE.md#parsing
 @implements: ZETTLE.md#syntax-design
-@user-story: Users capture zettel seeds with #zettel:slug tags
+@user-story: Users capture zettel seeds with #z:slug tags
 @data-flow: Text line -> Zettel tag parser -> Zettel record
 -}
 parseZettelTag :: Text -> Either T.ParseError Zettel
@@ -307,11 +307,7 @@ parseZettelTag text = case parse zettelParser "" text of
   where
     zettelParser :: Parser Zettel
     zettelParser = do
-        zettelType <- choice
-            [ ZettelFull <$ string "#zettel:"
-            , ZettelShort <$ string "#z:"  
-            , ZettelIdea <$ string "#idea:"
-            ]
+        zettelType <- ZettelNote <$ string "#z:"
         -- Parse everything after : until end of line
         rest <- takeWhileP Nothing (/= '\n')
         
@@ -345,11 +341,7 @@ parseZettelWithContinuation text = case parse zettelWithContinuationParser "" te
     zettelWithContinuationParser :: Parser Zettel
     zettelWithContinuationParser = do
         -- Parse the main zettel line
-        zettelType <- choice
-            [ ZettelFull <$ string "#zettel:"
-            , ZettelShort <$ string "#z:"  
-            , ZettelIdea <$ string "#idea:"
-            ]
+        zettelType <- ZettelNote <$ string "#z:"
         slug <- slugParser
         void $ char ' '
         content <- takeWhileP Nothing (/= '\n')
@@ -419,7 +411,7 @@ parseDateSectionWithZettels input = case parse dateSectionWithZettelsParser "" i
     tryParseZettel :: Text -> Maybe Zettel
     tryParseZettel line
         | T.null line = Nothing
-        | T.isPrefixOf "#zettel:" line || T.isPrefixOf "#z:" line || T.isPrefixOf "#idea:" line =
+        | T.isPrefixOf "#z:" line =
             case parseZettelTag line of
                 Left _ -> Nothing
                 Right zettel -> Just zettel

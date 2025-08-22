@@ -182,43 +182,43 @@ spec = do
                 Left err -> expectationFailure $ "Parse failed: " ++ show err
 
     describe "Zettel Tag Recognition (ZETTLE.md#parsing)" $ do
-        it "parses #zettel:slug tag - user captures full zettelkasten entry" $ do
-            -- User story: "I write #zettel:atomic-design to seed my zettelkasten"
-            -- Data flow: "#zettel:atomic-design" -> zettel parser -> ZettelFull type
-            let input = "#zettel:atomic-design Some thoughts on modular architecture"
+        it "parses #z:slug tag - user captures zettel entry" $ do
+            -- User story: "I write #z:atomic-design to seed my zettelkasten"
+            -- Data flow: "#z:atomic-design" -> zettel parser -> ZettelNote type
+            let input = "#z:atomic-design Some thoughts on modular architecture"
             case parseZettelTag input of
                 Right zettel -> do
                     zettelSlug zettel `shouldBe` "atomic-design"
-                    zettelType zettel `shouldBe` ZettelFull
+                    zettelType zettel `shouldBe` ZettelNote
                     zettelContent zettel `shouldBe` "Some thoughts on modular architecture"
                 Left err -> expectationFailure $ "Parse failed: " ++ show err
 
-        it "parses #z:slug tag - user captures quick fleeting thought" $ do
+        it "parses #z:slug tag - user captures fleeting thought" $ do
             -- User story: "I use #z:meeting for quick captures during meetings"
-            -- Data flow: "#z:meeting" -> zettel parser -> ZettelShort type
+            -- Data flow: "#z:meeting" -> zettel parser -> ZettelNote type
             let input = "#z:knowledge-graphs Personal knowledge management needs better linking"
             case parseZettelTag input of
                 Right zettel -> do
                     zettelSlug zettel `shouldBe` "knowledge-graphs"
-                    zettelType zettel `shouldBe` ZettelShort
+                    zettelType zettel `shouldBe` ZettelNote
                     zettelContent zettel `shouldBe` "Personal knowledge management needs better linking"
                 Left err -> expectationFailure $ "Parse failed: " ++ show err
 
-        it "parses #idea:slug tag - user captures project concept" $ do
-            -- User story: "I use #idea:personal-wiki for future project ideas"
-            -- Data flow: "#idea:personal-wiki" -> zettel parser -> ZettelIdea type
-            let input = "#idea:mg-extension What if mg could seed a zettelkasten?"
+        it "parses #z:slug tag - user captures project concept" $ do
+            -- User story: "I use #z:personal-wiki for project ideas"
+            -- Data flow: "#z:personal-wiki" -> zettel parser -> ZettelNote type
+            let input = "#z:mg-extension What if mg could seed a zettelkasten?"
             case parseZettelTag input of
                 Right zettel -> do
                     zettelSlug zettel `shouldBe` "mg-extension"
-                    zettelType zettel `shouldBe` ZettelIdea
+                    zettelType zettel `shouldBe` ZettelNote
                     zettelContent zettel `shouldBe` "What if mg could seed a zettelkasten?"
                 Left err -> expectationFailure $ "Parse failed: " ++ show err
 
         it "validates slug format - rejects invalid characters" $ do
             -- User story: "System enforces clean slugs for filename compatibility"
-            -- Data flow: "#zettel:invalid@slug!" -> validation -> ParseError
-            let input = "#zettel:invalid@slug! Content here"
+            -- Data flow: "#z:invalid@slug!" -> validation -> ParseError
+            let input = "#z:invalid@slug! Content here"
             case parseZettelTag input of
                 Left _ -> return () -- Expected: should fail
                 Right zettel -> expectationFailure $ "Should reject invalid slug: " ++ show zettel
@@ -226,7 +226,7 @@ spec = do
         it "validates slug length - rejects overly long slugs" $ do
             -- User story: "Slugs must be reasonable length for filesystem limits"
             let longSlug = replicate 60 'a' -- Over 50 char limit
-            let input = "#zettel:" <> T.pack longSlug <> " Content"
+            let input = "#z:" <> T.pack longSlug <> " Content"
             case parseZettelTag input of
                 Left _ -> return () -- Expected: should fail
                 Right zettel -> expectationFailure $ "Should reject long slug: " ++ show zettel
@@ -235,7 +235,7 @@ spec = do
             -- User story: "I indent additional thoughts under my zettel tags"
             -- Data flow: Main line + indented lines -> combined content
             let input = T.unlines 
-                    [ "#zettel:atomic-design Modular architecture principles"
+                    [ "#z:atomic-design Modular architecture principles"
                     , "  - Single responsibility per component"
                     , "  - Clear interfaces between modules" 
                     ]
@@ -264,7 +264,7 @@ spec = do
             let input = T.unlines
                     [ "2025-08-21"
                     , ". Regular task @work"
-                    , "#zettel:meeting-insights Team dynamics affect code quality"
+                    , "#z:meeting-insights Team dynamics affect code quality"
                     , "x Completed task @done"
                     , "#z:quick-note Personal knowledge needs better linking"
                     ]
@@ -376,7 +376,7 @@ spec = do
 
         it "handles zettel tag parse errors" $ do
             -- Cover parseZettelTag error paths
-            case parseZettelTag "#zettel:invalid-slug-no-content" of
+            case parseZettelTag "#z:invalid-slug-no-content" of
                 Left (ParseFailure _) -> return () -- Expected: missing content
                 Right _ -> expectationFailure "Should fail on missing content"
                 Left err -> expectationFailure $ "Wrong error type: " ++ show err
@@ -384,7 +384,7 @@ spec = do
         it "validates zettel slug length limits" $ do
             -- Cover slug length validation
             let longSlug = replicate 60 'a' -- Too long (>50 chars)
-            let input = "#zettel:" <> T.pack longSlug <> " Content here"
+            let input = "#z:" <> T.pack longSlug <> " Content here"
             case parseZettelTag input of
                 Left (ParseFailure _) -> return () -- Expected: slug too long
                 Right _ -> expectationFailure "Should fail on overly long slug"
@@ -392,37 +392,29 @@ spec = do
 
         it "validates zettel slug character restrictions" $ do
             -- Cover slug character validation
-            case parseZettelTag "#zettel:invalid@slug Content here" of
+            case parseZettelTag "#z:invalid@slug Content here" of
                 Left (ParseFailure _) -> return () -- Expected: invalid chars
                 Right _ -> expectationFailure "Should fail on invalid slug characters" 
                 Left err -> expectationFailure $ "Wrong error type: " ++ show err
 
         it "handles zettel with continuation parse errors" $ do
             -- Cover parseZettelWithContinuation error paths
-            case parseZettelWithContinuation "#zettel:" of -- Missing slug and content
+            case parseZettelWithContinuation "#z:" of -- Missing slug and content
                 Left (ParseFailure _) -> return () -- Expected
                 Right _ -> expectationFailure "Should fail on incomplete zettel"
                 Left err -> expectationFailure $ "Wrong error type: " ++ show err
 
-        it "covers all zettel types in continuation parsing" $ do
-            -- Cover all zettel type parsing paths in parseZettelWithContinuation
-            let fullZettel = "#zettel:test-slug Content here\n  Continuation"
-            let shortZettel = "#z:test-slug Content here\n  Continuation"  
-            let ideaZettel = "#idea:test-slug Content here\n  Continuation"
+        it "covers zettel type in continuation parsing" $ do
+            -- Cover zettel type parsing paths in parseZettelWithContinuation
+            let zettel = "#z:test-slug Content here\n  Continuation"
             
-            case parseZettelWithContinuation fullZettel of
-                Right z -> zettelType z `shouldBe` ZettelFull
-                Left err -> expectationFailure $ "Full zettel failed: " ++ show err
-            case parseZettelWithContinuation shortZettel of
-                Right z -> zettelType z `shouldBe` ZettelShort  
-                Left err -> expectationFailure $ "Short zettel failed: " ++ show err
-            case parseZettelWithContinuation ideaZettel of
-                Right z -> zettelType z `shouldBe` ZettelIdea
-                Left err -> expectationFailure $ "Idea zettel failed: " ++ show err
+            case parseZettelWithContinuation zettel of
+                Right z -> zettelType z `shouldBe` ZettelNote
+                Left err -> expectationFailure $ "Zettel failed: " ++ show err
 
         it "handles date section with zettels parse errors" $ do
             -- Cover parseDateSectionWithZettels error handling
-            let invalidInput = "invalid-date\n. Task\n#zettel:test Content"
+            let invalidInput = "invalid-date\n. Task\n#z:test Content"
             case parseDateSectionWithZettels invalidInput of
                 Left (ParseFailure _) -> return () -- Expected
                 Right _ -> expectationFailure "Should fail on invalid date section"

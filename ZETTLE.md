@@ -20,21 +20,20 @@ Special tags in todo.txt that mark content for zettel seeding:
 ```
 2025-08-21
 • Meeting with team @work
-#zettel:atomic-design Atomic design principle applies to data structures too
+#z:atomic-design Atomic design principle applies to data structures too
   - Each component should have single responsibility
   - Composition over inheritance in our API design
 
 #z:knowledge-graphs Personal knowledge management needs better linking
 
-#idea:mg-extension What if mg could seed a zettelkasten?
+#z:mg-extension What if mg could seed a zettelkasten?
   - Integrate with denote format
   - Use vjournal for future CalDAV sync
 ```
 
-### Tag Variants
-- `#zettel:SLUG` - Full zettelkasten entry
-- `#z:SLUG` - Short form for quick capture
-- `#idea:SLUG` - Ideas for future development
+### Tag Format
+- `#z:SLUG` - Simple zettel entry (all notes use this format)
+- Notes naturally evolve from fleeting to permanent without forced categorization
 
 ### Slug Requirements
 - Lowercase letters, numbers, hyphens only
@@ -127,9 +126,7 @@ data Zettel = Zettel
   } deriving (Eq, Show)
 
 data ZettelType 
-  = ZettelFull    -- #zettel:slug
-  | ZettelShort   -- #z:slug  
-  | ZettelIdea    -- #idea:slug
+  = ZettelNote    -- #z:slug (unified type for all zettels)
   deriving (Eq, Show)
 ```
 
@@ -143,9 +140,10 @@ mg sync --dry-run    # Preview all sync operations including zettels
 
 ### Zettel-Specific Commands
 ```bash
-mg zettels list         # Show all zettel tags in current todo.txt
-mg zettels seed         # Seed zettels only (no task/event sync)
-mg zettels seed --dry-run  # Preview zettel seeding
+mg zettel               # Extract zettels from current todo.txt
+mg zettel --dry-run     # Preview zettel extraction
+mg zettel --file FILE   # Extract from custom file
+mg zettel --notes-dir DIR  # Set custom output directory
 ```
 
 ### Configuration Commands
@@ -158,7 +156,7 @@ mg config set zettel.keywords-from-context true  # Use @contexts as keywords
 ## Processing Logic
 
 ### Parse Phase
-1. Scan todo.txt for zettel tags (`#zettel:`, `#z:`, `#idea:`)
+1. Scan todo.txt for zettel tags (`#z:`)
 2. Extract content (current line + indented continuation)
 3. Parse slug and validate format
 4. Generate keywords from contexts and content
@@ -189,9 +187,7 @@ keywords_from_context = true
 backup_original = true
 
 [zettel.formats]
-full_tag = "#zettel:"
-short_tag = "#z:"  
-idea_tag = "#idea:"
+tag = "#z:"
 ```
 
 ## Future: CalDAV Integration
@@ -247,11 +243,11 @@ Following mg's test-first development:
 ```
 2025-08-21
 • Team retrospective @work
-#zettel:retrospective-insights Team dynamics affect code quality
+#z:retrospective-insights Team dynamics affect code quality
   - Psychological safety enables better code reviews
   - Time pressure reduces thoughtful architecture
 ```
-→ Creates: `20250821T091500--retrospective-insights__team-dynamics_code-quality.txt`
+→ Creates: `20250821T091500--retrospective-insights.txt`
 
 ### Research Notes
 ```
@@ -259,15 +255,15 @@ Following mg's test-first development:
   - RDF as knowledge representation
   - Links between concepts, not just documents
 ```
-→ Creates: `20250821T141200--semantic-web__knowledge-representation_rdf.txt`
+→ Creates: `20250821T141200--semantic-web.txt`
 
 ### Project Ideas
 ```
-#idea:personal-wiki Combine mg with static site generation
+#z:personal-wiki Combine mg with static site generation
   - Zettels become wiki pages
   - Task history shows project evolution
 ```
-→ Creates: `20250821T160300--personal-wiki__static-sites_project-management.txt`
+→ Creates: `20250821T160300--personal-wiki.txt`
 
 ## Benefits
 

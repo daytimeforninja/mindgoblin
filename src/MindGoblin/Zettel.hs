@@ -84,14 +84,12 @@ sanitizeKeywordsForFilename keywords =
 {- | Generate semantic keywords based on zettel type
 @test-spec: ZETTLE.md#denote-format
 @implements: ZETTLE.md#semantic-keywords
-@user-story: Different zettel types get appropriate keywords
+@user-story: All zettels get consistent keywords (can evolve organically)
 @data-flow: ZettelType -> semantic keywords -> denote tags
 -}
 generateZettelTypeKeywords :: Zettel -> [Text]
 generateZettelTypeKeywords zettel = case zettelType zettel of
-    ZettelFull -> ["permanent-notes", "zettelkasten"]
-    ZettelShort -> ["fleeting-notes", "quick-capture"]
-    ZettelIdea -> ["ideas", "projects", "future"]
+    ZettelNote -> ["zettel", "notes"]
 
 {- | Create zettel file on disk
 @test-spec: ZETTLE.md#file-system
